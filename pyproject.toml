@@ -10,4 +10,5 @@ dependencies = [
     "matplotlib>=3.10.8",
     "polars>=1.37.1",
     "pydantic-ai>=1.43.0",
+    "pytest>=9.0.2",
 ]
