@@ -9,4 +9,5 @@ dependencies = [
     "marimo>=0.19.4",
     "matplotlib>=3.10.8",
     "polars>=1.37.1",
+    "pydantic-ai>=1.43.0",
 ]
