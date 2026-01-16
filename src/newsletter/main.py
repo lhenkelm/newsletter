@@ -5,6 +5,7 @@ import asyncio
 import polars as pl
 
 from newsletter import config
+from newsletter.category import CategoryAgent
 from newsletter.ingest import load_recent_items
 from newsletter.scoring import ScoringAgent
 
@@ -45,6 +46,43 @@ async def score_items(df: pl.DataFrame) -> pl.DataFrame:
     )
 
 
+async def categorize_items(df: pl.DataFrame) -> pl.DataFrame:
+    """Assign interest categories to news items.
+
+    Args:
+        df: DataFrame with news items to categorize.
+
+    Returns:
+        DataFrame with added 'interest_categories' and 'category_reasoning' columns.
+    """
+    # Initialize and load the category agent
+    agent = CategoryAgent(model=config.CATEGORY_MODEL)
+    agent.load_audience_profile(profile_path=config.AUDIENCE_PROFILE_PATH)
+
+    # Categorize each item
+    categories_list = []
+    reasonings = []
+
+    for row in df.iter_rows(named=True):
+        result = await agent.select_categories(
+            title=row.get("title", ""),
+            short_summary=row.get("short_summary", ""),
+            application_tags=row.get("application_tags"),
+            tools_tags=row.get("tools_tags"),
+            techniques_tags=row.get("techniques_tags"),
+        )
+        categories_list.append(result.categories)
+        reasonings.append(result.reasoning)
+
+    # Add categories as new columns
+    return df.with_columns(
+        [
+            pl.Series("interest_categories", categories_list),
+            pl.Series("category_reasoning", reasonings),
+        ]
+    )
+
+
 def main() -> None:
     """Main function to run the newsletter generator."""
     # Step 1: Load recent items
@@ -63,6 +101,20 @@ def main() -> None:
     print(
         f"Score distribution: {df_scored['relevance_score'].value_counts().sort('relevance_score')}"
     )
+
+    # Step 3: Categorize items
+    print("Categorizing items...")
+    df_categorized = asyncio.run(categorize_items(df_scored))
+    print(f"Categorized {len(df_categorized)} items")
+
+    # Show category distribution
+    all_categories = (
+        df_categorized.select(pl.col("interest_categories").explode())
+        .to_series()
+        .value_counts()
+        .sort("count", descending=True)
+    )
+    print(f"Category distribution:\n{all_categories}")
 
 
 if __name__ == "__main__":

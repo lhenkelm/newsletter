@@ -13,3 +13,6 @@ SOURCE_URI = os.getenv(
 # Scoring Agent Configuration
 SCORING_MODEL = os.getenv("SCORING_MODEL", "openai:gpt-4o-mini")
 AUDIENCE_PROFILE_PATH = os.getenv("AUDIENCE_PROFILE_PATH", "data/audience_profile.txt")
+
+# Category Agent Configuration
+CATEGORY_MODEL = os.getenv("CATEGORY_MODEL", "openai:gpt-4o-mini")
