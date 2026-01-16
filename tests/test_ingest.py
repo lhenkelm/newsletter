@@ -1,7 +1,6 @@
 """Integration tests for ingest module."""
 
 import polars as pl
-import pytest
 
 from newsletter.ingest import load_recent_items
 
@@ -15,4 +14,3 @@ def test_load_recent_items_returns_dataframe():
     assert "created_at" in df.columns
     assert "title" in df.columns
     assert "short_summary" in df.columns
-
