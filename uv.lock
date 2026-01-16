@@ -2540,6 +2540,7 @@ dependencies = [
     { name = "polars" },
     { name = "pydantic-ai" },
     { name = "pytest" },
+    { name = "python-dotenv" },
 ]
 
 [package.metadata]
@@ -2550,6 +2551,7 @@ requires-dist = [
     { name = "polars", specifier = ">=1.37.1" },
     { name = "pydantic-ai", specifier = ">=1.43.0" },
     { name = "pytest", specifier = ">=9.0.2" },
+    { name = "python-dotenv", specifier = ">=1.2.1" },
 ]
 
 [[package]]
