@@ -14,6 +14,7 @@ uv sync
 
 Copy `.env.example` to `.env` and customize as needed:
 
+Important: export any API keys (by default, the repo uses OpenAI, but you can change this in the configuration using env vars or a .env file) before running the pipeline.
 ```shell
 cp .env.example .env
 ```

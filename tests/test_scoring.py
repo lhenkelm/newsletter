@@ -73,7 +73,7 @@ async def test_scoring_agent_setup_and_run_mocked(scoring_agent):
 
     # Mock the agent.run method to return a fake score
     mock_result = AsyncMock()
-    mock_result.data = RelevanceScore(
+    mock_result.output = RelevanceScore(
         score=4,
         reasoning="Highly relevant for LLMOps: covers RAG implementation with practical tooling (LangChain) and monitoring strategies applicable to enterprise AI deployments.",
     )
