@@ -86,4 +86,5 @@ Consider:
 Return a score from 0 (irrelevant) to 5 (high priority) with brief reasoning."""
 
         result = await self.agent.run(prompt, output_type=RelevanceScore)
-        return result.data
+        # In pydantic-ai, when output_type is specified, result.output contains the structured data
+        return result.output
