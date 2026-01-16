@@ -64,8 +64,6 @@ def main() -> None:
         f"Score distribution: {df_scored['relevance_score'].value_counts().sort('relevance_score')}"
     )
 
-    # TODO: Step 3: Generate newsletter from scored items
-
 
 if __name__ == "__main__":
     main()
