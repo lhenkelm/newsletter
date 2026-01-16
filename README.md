@@ -18,12 +18,7 @@ Important: export any API keys (by default, the repo uses OpenAI, but you can ch
 ```shell
 cp .env.example .env
 ```
-
-Available settings:
-- `CUTOFF_DAYS` - Number of days to look back for recent items (default: 7)
-- `MIN_ITEMS` - Minimum expected items, warns if fewer (default: 3)
-- `MAX_ITEMS` - Maximum expected items, warns if more (default: 30)
-- `SOURCE_URI` - Dataset URI (default: Hugging Face ZenML LLMOps dataset)
+see `.env.example` for available configuration options.
 
 ## Usage
 
