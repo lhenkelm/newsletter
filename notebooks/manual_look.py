@@ -7,7 +7,10 @@ app = marimo.App()
 @app.cell
 def _():
     import polars as pl
-    df = pl.read_parquet("hf://datasets/zenml/llmops-database/data/train-00000-of-00001.parquet")
+
+    df = pl.read_parquet(
+        "hf://datasets/zenml/llmops-database/data/train-00000-of-00001.parquet"
+    )
     df
     return
 
