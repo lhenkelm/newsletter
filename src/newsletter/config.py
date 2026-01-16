@@ -9,3 +9,7 @@ SOURCE_URI = os.getenv(
     "SOURCE_URI",
     "hf://datasets/zenml/llmops-database/data/train-00000-of-00001.parquet",
 )
+
+# Scoring Agent Configuration
+SCORING_MODEL = os.getenv("SCORING_MODEL", "openai:gpt-4o-mini")
+AUDIENCE_PROFILE_PATH = os.getenv("AUDIENCE_PROFILE_PATH", "data/audience_profile.txt")
