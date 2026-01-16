@@ -14,5 +14,5 @@ def test_load_recent_items_returns_dataframe():
     assert isinstance(df, pl.DataFrame)
     assert "created_at" in df.columns
     assert "title" in df.columns
-    assert "summary" in df.columns
+    assert "short_summary" in df.columns
 
