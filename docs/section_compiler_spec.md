@@ -9,10 +9,17 @@
    - Within each category, rank by relevance_score, then by recency (created_at).
    - Ensure diversity: avoid multiple items from same company unless exceptionally relevant.
 6. Prompt: given candidate items with scores and categories, select up to 10 items distributed across up to 3 categories that maximize newsletter value for the audience.
-7. Output: list of selected item IDs/indices with assigned newsletter section
+7. Output: mapping of section names to list of item tuples, matching newsletter writer input format.
 8. Schema: wrap response in BaseModel with fields:
-   - selected_items: list[SelectedItem] where SelectedItem has index (int), section (str), headline (str).
+   - section_items: dict[str, list[tuple[str, str]]] — maps category name to list of (long_summary, source_url) tuples.
    - selected_categories: list[str] (the 3 or fewer chosen sections).
    - selection_reasoning: str (brief explanation of choices).
 9. Constraints: max 10 items total; max 3 categories; at least 1 item per selected category.
-11. Usage: output feeds directly into newsletter generation step; selected_items DataFrame used for final markdown rendering.
+10. Output format example:
+    ```python
+    {
+        "AI Engineering": [("Summary of first article...", "https://example.com/1"), ...],
+        "Industry News": [("Summary of second article...", "https://example.com/2"), ...]
+    }
+    ```
+11. Usage: output feeds directly into newsletter writer agent; section_items dict passed as-is to writer.
