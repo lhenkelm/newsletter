@@ -10,7 +10,29 @@ clone the repository and install the required packages. If you don't have `uv` i
 uv sync
 ```
 
-## Testing:
+## Configuration
+
+Copy `.env.example` to `.env` and customize as needed:
+
+```shell
+cp .env.example .env
+```
+
+Available settings:
+- `CUTOFF_DAYS` - Number of days to look back for recent items (default: 7)
+- `MIN_ITEMS` - Minimum expected items, warns if fewer (default: 3)
+- `MAX_ITEMS` - Maximum expected items, warns if more (default: 30)
+- `SOURCE_URI` - Dataset URI (default: Hugging Face ZenML LLMOps dataset)
+
+## Usage
+
+Run the newsletter generator:
+
+```shell
+uv run python -m newsletter.main
+```
+
+## Testing
 
 ```shell
 uv run -- pytest
