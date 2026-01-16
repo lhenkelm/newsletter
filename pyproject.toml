@@ -6,4 +6,6 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "ipykernel>=7.1.0",
+    "marimo>=0.19.4",
+    "polars>=1.37.1",
 ]
