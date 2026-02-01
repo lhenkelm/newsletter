@@ -1,6 +1,7 @@
 """Relevance scoring agent for news items."""
 
 from pathlib import Path
+from typing import Any, Self, Type
 
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent
@@ -22,21 +23,50 @@ class RelevanceScore(BaseModel):
 
 
 class ScoringAgent:
-    """Async agent for scoring news items against audience profile."""
+    """Async agent for scoring news items against audience profile.
 
-    def __init__(self, model: str = "openai:gpt-4o-mini"):
+    Attributes:
+        agent: Underlying pydantic-ai Agent instance.
+        profile: Textual audience profile for relevance scoring.
+
+    Recommended usage:
+
+        import newsletter.config as config
+        agent = ScoringAgent.from_config(config)
+        result = await agent.score_item(
+            title="...",
+            short_summary="...",
+            industry="...",
+            company="...",
+        )
+    """
+
+    def __init__(self, agent: Agent, profile: str):
         """Initialize the scoring agent.
 
         Args:
             model: Model identifier for pydantic-ai Agent.
         """
-        self.agent = Agent(model)
-        self.profile: str | None = None
+        if not isinstance(agent, Agent):
+            raise TypeError(
+                f"{self.__class__.__name__} expected 'agent' to be an instance of 'Agent'"
+                f" got {agent!r} of type {type(agent)!r}"
+            )
+        self.agent = agent
+        if not isinstance(profile, str):
+            raise TypeError(
+                f"{self.__class__.__name__} expected 'profile' to be of type 'str'"
+                f" got {profile!r} of type {type(profile)!r}"
+            )
+        if not profile:
+            raise ValueError(f"Audience profile cannot be empty, got {profile!r}")
+        self.profile = profile
         _LOGGER.debug(f"initialized {self!r}")
 
-    def load_audience_profile(
-        self, profile_path: str | Path = "data/audience_profile.txt"
-    ) -> None:
+    @staticmethod
+    def _load_audience_profile(
+        profile_path: str | Path = "data/audience_profile.txt",
+    ) -> str:
         """Load audience profile from file.
 
         Args:
@@ -44,8 +74,22 @@ class ScoringAgent:
         """
         _LOGGER.debug(f"loading profile from {profile_path=!r}")
         path = Path(profile_path)
-        self.profile = path.read_text().strip()
-        _LOGGER.debug(f"loaded {self.profile=!r}")
+        profile = path.read_text().strip()
+        _LOGGER.debug(f"loaded {profile=!r}")
+        return profile
+
+    @classmethod
+    def from_config(cls: Type[Self], config: Any) -> Self:
+        """Create a ScoringAgent instance from configuration.
+
+        Args:
+            config: Configuration module with attributes
+                SCORING_MODEL and
+                AUDIENCE_PROFILE_PATH.
+        """
+        profile = cls._load_audience_profile(config.AUDIENCE_PROFILE_PATH)
+        agent = Agent(config.SCORING_MODEL)
+        return cls(agent=agent, profile=profile)
 
     async def score_item(
         self,
@@ -64,14 +108,7 @@ class ScoringAgent:
 
         Returns:
             RelevanceScore with integer score 0-5 and reasoning.
-
-        Raises:
-            ValueError: If audience profile has not been loaded.
         """
-        if not self.profile:
-            raise ValueError(
-                "Audience profile not loaded. Call load_audience_profile() first."
-            )
 
         prompt = f"""Score this news item's relevance for the target audience.
 

@@ -17,36 +17,12 @@ def mock_api_key(monkeypatch):
 @pytest.fixture
 def scoring_agent(mock_api_key):
     """Create a scoring agent instance."""
-    agent = ScoringAgent()
-    agent.load_audience_profile("data/audience_profile.txt")
-    return agent
 
+    class MockConfig:
+        SCORING_MODEL = "openai:gpt4o-mini"
+        AUDIENCE_PROFILE_PATH = "data/audience_profile.txt"
 
-def test_scoring_agent_profile_loading():
-    """Test that audience profile can be loaded."""
-    agent = ScoringAgent.__new__(ScoringAgent)  # Create without calling __init__
-    agent.agent = None  # Set dummy agent
-    agent.profile = None
-
-    agent.load_audience_profile("data/audience_profile.txt")
-
-    assert agent.profile is not None
-    assert len(agent.profile) > 0
-    assert "AI" in agent.profile
-
-
-@pytest.mark.asyncio
-async def test_scoring_agent_without_profile(mock_api_key):
-    """Test that the agent raises an error if profile is not loaded."""
-    agent = ScoringAgent()
-
-    with pytest.raises(ValueError, match="Audience profile not loaded"):
-        await agent.score_item(
-            title="Test Title",
-            short_summary="Test summary",
-            industry="Tech",
-            company="Test Co",
-        )
+    return ScoringAgent.from_config(MockConfig())
 
 
 @pytest.mark.asyncio

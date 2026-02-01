@@ -23,8 +23,7 @@ async def score_items(df: pl.DataFrame) -> pl.DataFrame:
         DataFrame with added 'relevance_score' and 'score_reasoning' columns.
     """
     # Initialize and load the scoring agent
-    agent = ScoringAgent(model=config.SCORING_MODEL)
-    agent.load_audience_profile(profile_path=config.AUDIENCE_PROFILE_PATH)
+    agent = ScoringAgent.from_config(config)
 
     # Score each item
     scores = []
