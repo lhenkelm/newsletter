@@ -9,7 +9,7 @@ from newsletter import config
 from newsletter.category import CategoryAgent
 from newsletter.ingest import load_recent_items
 from newsletter.scoring import ScoringAgent
-from src.newsletter.config import LOGGING_LEVEL
+from newsletter.config import LOGGING_LEVEL
 
 _LOGGER = getLogger(__name__)
 
