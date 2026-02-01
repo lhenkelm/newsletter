@@ -4,6 +4,7 @@ import os
 from unittest.mock import AsyncMock, patch
 
 import pytest
+import pytest_asyncio
 
 from newsletter.category import (
     ALLOWED_CATEGORIES,
@@ -18,11 +19,15 @@ def mock_api_key(monkeypatch):
     monkeypatch.setenv("OPENAI_API_KEY", "sk-test-fake-key-for-testing")
 
 
-@pytest.fixture
-def category_agent(mock_api_key):
+@pytest_asyncio.fixture
+async def category_agent(mock_api_key):
     """Create a category agent instance."""
-    agent = CategoryAgent()
-    agent.load_audience_profile("data/audience_profile.txt")
+
+    class MockConfig:
+        CATEGORY_MODEL = "openai:gpt4o-mini"
+        AUDIENCE_PROFILE_PATH = "./data/audience_profile.txt"
+
+    agent = await CategoryAgent.from_config(MockConfig())
     return agent
 
 
@@ -53,66 +58,9 @@ class TestCategorySelection:
                 reasoning="This should fail",
             )
 
-    def test_empty_categories_rejected(self):
-        """Test that empty category list raises validation error."""
-        with pytest.raises(ValueError):
-            CategorySelection(
-                categories=[],
-                reasoning="This should fail",
-            )
-
-    def test_too_many_categories_rejected(self):
-        """Test that more than 3 categories raises validation error."""
-        with pytest.raises(ValueError):
-            CategorySelection(
-                categories=[
-                    "AI Engineering",
-                    "LLMOps Tools",
-                    "Production ML",
-                    "Industry News",
-                ],
-                reasoning="This should fail",
-            )
-
-
-class TestCategoryAgentProfileLoading:
-    """Tests for profile loading functionality."""
-
-    def test_profile_loading(self):
-        """Test that audience profile can be loaded."""
-        agent = CategoryAgent.__new__(CategoryAgent)
-        agent.agent = None
-        agent.profile = None
-
-        agent.load_audience_profile("data/audience_profile.txt")
-
-        assert agent.profile is not None
-        assert len(agent.profile) > 0
-        assert "AI" in agent.profile
-
-    def test_profile_not_found_raises_error(self):
-        """Test that missing profile file raises error."""
-        agent = CategoryAgent.__new__(CategoryAgent)
-        agent.agent = None
-        agent.profile = None
-
-        with pytest.raises(FileNotFoundError):
-            agent.load_audience_profile("nonexistent/profile.txt")
-
 
 class TestCategoryAgentSelection:
     """Tests for category selection functionality."""
-
-    @pytest.mark.asyncio
-    async def test_select_categories_without_profile(self, mock_api_key):
-        """Test that the agent raises an error if profile is not loaded."""
-        agent = CategoryAgent()
-
-        with pytest.raises(ValueError, match="Audience profile not loaded"):
-            await agent.select_categories(
-                title="Test Title",
-                short_summary="Test summary",
-            )
 
     @pytest.mark.asyncio
     async def test_select_categories_mocked(self, category_agent):

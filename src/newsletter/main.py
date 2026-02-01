@@ -57,9 +57,7 @@ async def categorize_items(df: pl.DataFrame) -> pl.DataFrame:
     Returns:
         DataFrame with added 'interest_categories' and 'category_reasoning' columns.
     """
-    # Initialize and load the category agent
-    agent = CategoryAgent(model=config.CATEGORY_MODEL)
-    agent.load_audience_profile(profile_path=config.AUDIENCE_PROFILE_PATH)
+    agent = await CategoryAgent.from_config(config)
 
     # Categorize each item
     categories_list = []

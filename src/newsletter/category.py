@@ -1,11 +1,12 @@
 """Category selection agent for news items."""
 
 from logging import getLogger
-from pathlib import Path
-from typing import Literal
+from typing import Any, Literal, Self, Type
 
 from pydantic import BaseModel, Field, field_validator
 from pydantic_ai import Agent
+
+from newsletter.profile import load_audience_profile
 
 _LOGGER = getLogger(__name__)
 
@@ -67,28 +68,36 @@ class CategorySelection(BaseModel):
 class CategoryAgent:
     """Async agent for assigning interest categories to news items."""
 
-    def __init__(self, model: str = "openai:gpt-4o-mini"):
-        """Initialize the category selection agent.
-
-        Args:
-            model: Model identifier for pydantic-ai Agent.
-        """
-        self.agent = Agent(model)
-        self.profile: str | None = None
+    def __init__(self, agent: Agent, profile: str):
+        """Initialize the category selection agent."""
+        if not isinstance(agent, Agent):
+            raise TypeError(
+                f"{self.__class__.__name__} expected 'agent' to be an instance of 'Agent'"
+                f" got {agent!r} of type {type(agent)!r}"
+            )
+        self.agent = agent
+        if not isinstance(profile, str):
+            raise TypeError(
+                f"{self.__class__.__name__} expected 'profile' to be of type 'str'"
+                f" got {profile!r} of type {type(profile)!r}"
+            )
+        if not profile:
+            raise ValueError(f"Audience profile cannot be empty, got {profile!r}")
+        self.profile = profile
         _LOGGER.debug(f"initialised {self=!r}")
 
-    def load_audience_profile(
-        self, profile_path: str | Path = "data/audience_profile.txt"
-    ) -> None:
-        """Load audience profile from file.
+    @classmethod
+    async def from_config(cls: Type[Self], config: Any) -> Self:
+        """Create a CategoryAgent instance from configuration.
 
         Args:
-            profile_path: Path to the audience profile text file.
+            config: Configuration module with attributes
+                CATEGORY_MODEL and
+                AUDIENCE_PROFILE_PATH.
         """
-        _LOGGER.debug(f"loading profile from {profile_path=!r}")
-        path = Path(profile_path)
-        self.profile = path.read_text().strip()
-        _LOGGER.debug(f"loaded {self.profile=!r}")
+        profile = await load_audience_profile(config.AUDIENCE_PROFILE_PATH)
+        agent = Agent(config.CATEGORY_MODEL)
+        return cls(agent, profile)
 
     async def select_categories(
         self,
@@ -113,11 +122,6 @@ class CategoryAgent:
         Raises:
             ValueError: If audience profile has not been loaded.
         """
-        if not self.profile:
-            raise ValueError(
-                "Audience profile not loaded. Call load_audience_profile() first."
-            )
-
         _LOGGER.debug(f"selecting categories for item with {title=!r}")
 
         # Format existing tags
