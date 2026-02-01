@@ -105,6 +105,18 @@ class CategoryAgent:
         self.cache = cache
         _LOGGER.debug(f"initialised {self=!r}")
 
+    def __repr__(self):
+        if len(self.profile) > 180:
+            profile = f"{self.profile[:87]} [...] {self.profile[-87:]}"
+        else:
+            profile = self.profile
+        return (
+            f"{self.__class__.__qualname__}("
+            f"agent={self.agent!r}, "
+            f"profile={profile!r}, "
+            f"cache={self.cache!r})"
+        )
+
     @classmethod
     async def from_config(cls: Type[Self], config: Any) -> Self:
         """Create a CategoryAgent instance from configuration.
