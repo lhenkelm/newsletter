@@ -20,7 +20,7 @@ async def scoring_agent(mock_api_key):
     """Create a scoring agent instance."""
 
     class MockConfig:
-        SCORING_MODEL = "openai:gpt4o-mini"
+        SCORING_MODEL = "openai:gpt-4o-mini"
         AUDIENCE_PROFILE_PATH = "data/audience_profile.txt"
         CACHE_DIRECTORY = None
 
