@@ -6,11 +6,11 @@ from datetime import datetime, timedelta, timezone
 import polars as pl
 
 
-def load_recent_items(
-    cutoff_days: int = 7,
-    min_items: int = 3,
-    max_items: int = 30,
-    source_uri: str = "hf://datasets/zenml/llmops-database/data/train-00000-of-00001.parquet",
+async def load_recent_items(
+    cutoff_days: int,
+    min_items: int,
+    max_items: int,
+    source_uri: str,
 ) -> pl.DataFrame:
     """Load recent items from the ZenML LLMOps dataset.
 
@@ -23,15 +23,22 @@ def load_recent_items(
     Returns:
         A Polars DataFrame with items from the last `cutoff_days` days.
     """
+    if min_items > max_items:
+        raise ValueError(
+            f"expect 'min_items' <= 'max_items', got {min_items=!r}, {max_items=!r} "
+        )
+    if cutoff_days < 1:
+        raise ValueError(f"expect cutoff_days >= 1, got {cutoff_days=!r}")
+
     cutoff_date = datetime.now(timezone.utc) - timedelta(days=cutoff_days)
 
-    df = (
+    df = await (
         pl.scan_parquet(source_uri)
         .with_columns(
             pl.col("created_at").str.to_datetime(time_zone="UTC").alias("created_at")
         )
         .filter(pl.col("created_at") >= cutoff_date)
-        .collect()
+        .collect_async()
     )
 
     row_count = len(df)
