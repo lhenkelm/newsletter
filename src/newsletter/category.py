@@ -71,6 +71,17 @@ class CategoryAgent:
     Attributes:
         agent: Underlying pydantic-ai Agent instance.
         profile: Textual audience profile for category selection.
+
+    Recommended usage:
+        import newsletter.config as config
+        agent = await CategoryAgent.from_config(config)
+        result = await agent.select_categories(
+            title="...",
+            short_summary="...",
+            application_tags="...",
+            tools_tags="...",
+            techniques_tags="...",
+        )
     """
 
     def __init__(self, agent: Agent, profile: str):
