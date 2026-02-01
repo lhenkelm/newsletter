@@ -1,6 +1,9 @@
 """Configuration module for newsletter generator."""
 
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 CUTOFF_DAYS = int(os.getenv("CUTOFF_DAYS", "7"))
 MIN_ITEMS = int(os.getenv("MIN_ITEMS", "3"))
