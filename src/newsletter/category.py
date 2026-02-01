@@ -139,7 +139,8 @@ Instructions:
 3. Prefer specific categories over generic ones when applicable
 4. Return exactly 1-3 categories from the allowed list above
 
-Return your selection with brief reasoning."""
+Return your selection with brief reasoning as JSON.
+Adhere to the schema : {CategorySelection.model_json_schema()}"""
 
         result = await self.agent.run(prompt, output_type=CategorySelection)
         return result.output
