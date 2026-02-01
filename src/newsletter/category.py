@@ -1,10 +1,13 @@
 """Category selection agent for news items."""
 
+from logging import getLogger
 from pathlib import Path
 from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 from pydantic_ai import Agent
+
+_LOGGER = getLogger(__name__)
 
 # Predefined categories for newsletter sections
 ALLOWED_CATEGORIES = frozenset(
@@ -72,6 +75,7 @@ class CategoryAgent:
         """
         self.agent = Agent(model)
         self.profile: str | None = None
+        _LOGGER.debug(f"initialised {self=!r}")
 
     def load_audience_profile(
         self, profile_path: str | Path = "data/audience_profile.txt"
@@ -81,8 +85,10 @@ class CategoryAgent:
         Args:
             profile_path: Path to the audience profile text file.
         """
+        _LOGGER.debug(f"loading profile from {profile_path=!r}")
         path = Path(profile_path)
         self.profile = path.read_text().strip()
+        _LOGGER.debug(f"loaded {self.profile=!r}")
 
     async def select_categories(
         self,
@@ -111,6 +117,8 @@ class CategoryAgent:
             raise ValueError(
                 "Audience profile not loaded. Call load_audience_profile() first."
             )
+
+        _LOGGER.debug(f"selecting categories for item with {title=!r}")
 
         # Format existing tags
         tags_section = ""
@@ -143,4 +151,5 @@ Return your selection with brief reasoning as JSON.
 Adhere to the schema : {CategorySelection.model_json_schema()}"""
 
         result = await self.agent.run(prompt, output_type=CategorySelection)
+        _LOGGER.debug(f"{result=!r}")
         return result.output
