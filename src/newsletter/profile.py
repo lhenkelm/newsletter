@@ -21,6 +21,7 @@ async def load_audience_profile(
     """Load audience profile from file.
 
     File contents are cached per-event-loop, since multiple agent instances may need to load them.
+    File I/O is handled in a thread to avoid unnecessary blocking.
 
     Args:
         profile_path: Path to the audience profile text file.
