@@ -10,6 +10,11 @@ from newsletter.category import CategoryAgent
 from newsletter.ingest import load_recent_items
 from newsletter.scoring import ScoringAgent
 
+import logfire
+
+logfire.configure()
+logfire.instrument_pydantic_ai()
+
 _LOGGER = getLogger(__name__)
 
 
