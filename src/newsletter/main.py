@@ -13,17 +13,16 @@ from newsletter.scoring import ScoringAgent
 _LOGGER = getLogger(__name__)
 
 
-async def score_items(df: pl.DataFrame) -> pl.DataFrame:
+async def score_items(df: pl.DataFrame, agent: ScoringAgent) -> pl.DataFrame:
     """Score items for relevance to the target audience.
 
     Args:
         df: DataFrame with news items to score.
-
+        agent: Pre-initialized ScoringAgent instance.
     Returns:
         DataFrame with added 'relevance_score' and 'score_reasoning' columns.
     """
     _LOGGER.info("Scoring items for relevance...")
-    agent = await ScoringAgent.from_config(config)
 
     tasks = []
     async with asyncio.TaskGroup() as tg:
@@ -56,17 +55,17 @@ async def score_items(df: pl.DataFrame) -> pl.DataFrame:
     return df
 
 
-async def categorize_items(df: pl.DataFrame) -> pl.DataFrame:
+async def categorize_items(df: pl.DataFrame, agent: CategoryAgent) -> pl.DataFrame:
     """Assign interest categories to news items.
 
     Args:
         df: DataFrame with news items to categorize.
+        agent: Pre-initialized CategoryAgent instance.
 
     Returns:
         DataFrame with added 'interest_categories' and 'category_reasoning' columns.
     """
     _LOGGER.info("Categorizing items...")
-    agent = await CategoryAgent.from_config(config)
 
     tasks = []
     async with asyncio.TaskGroup() as tg:
@@ -110,18 +109,30 @@ async def main() -> None:
     """Main function to run the newsletter generator."""
     basicConfig(level=config.LOGGING_LEVEL)
 
-    df = await load_recent_items(
-        cutoff_days=config.CUTOFF_DAYS,
-        min_items=config.MIN_ITEMS,
-        max_items=config.MAX_ITEMS,
-        source_uri=config.SOURCE_URI,
-    )
-    _LOGGER.info(f"Loaded {len(df)} recent items")
-
-    df = df.with_row_index("index")
+    # initialisation of data and agents can be done concurrently
     async with asyncio.TaskGroup() as tg:
-        scoring_task = tg.create_task(score_items(df))
-        categorisation_task = tg.create_task(categorize_items(df))
+        load_task = tg.create_task(
+            load_recent_items(
+                cutoff_days=config.CUTOFF_DAYS,
+                min_items=config.MIN_ITEMS,
+                max_items=config.MAX_ITEMS,
+                source_uri=config.SOURCE_URI,
+            )
+        )
+        scoring_init_task = tg.create_task(ScoringAgent.from_config(config))
+        category_init_task = tg.create_task(CategoryAgent.from_config(config))
+
+    df = await load_task
+    scoring_agent = await scoring_init_task
+    category_agent = await category_init_task
+
+    # a row index is needed to join results back later
+    df = df.with_row_index("index")
+
+    # scoring and categorisation can be done concurrently
+    async with asyncio.TaskGroup() as tg:
+        scoring_task = tg.create_task(score_items(df, scoring_agent))
+        categorisation_task = tg.create_task(categorize_items(df, category_agent))
 
     df_scored = await scoring_task
     df_categorized = await categorisation_task

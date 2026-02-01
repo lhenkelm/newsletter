@@ -1,9 +1,11 @@
 """Weekly ingest module for loading recent items from the ZenML LLMOps dataset."""
 
-import warnings
+from logging import getLogger
 from datetime import datetime, timedelta, timezone
 
 import polars as pl
+
+_LOGGER = getLogger(__name__)
 
 
 async def load_recent_items(
@@ -43,8 +45,9 @@ async def load_recent_items(
 
     row_count = len(df)
     if row_count < min_items:
-        warnings.warn(f"Only {row_count} items found (minimum expected: {min_items})")
+        _LOGGER.warning(f"Only {row_count} items found (minimum expected: {min_items})")
     elif row_count > max_items:
-        warnings.warn(f"{row_count} items found (maximum expected: {max_items})")
+        _LOGGER.warning(f"{row_count} items found (maximum expected: {max_items})")
 
+    _LOGGER.info(f"Loaded {len(df)} recent items")
     return df
