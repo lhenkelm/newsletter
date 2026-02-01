@@ -9,7 +9,6 @@ from newsletter import config
 from newsletter.category import CategoryAgent
 from newsletter.ingest import load_recent_items
 from newsletter.scoring import ScoringAgent
-from newsletter.config import LOGGING_LEVEL
 
 _LOGGER = getLogger(__name__)
 
@@ -89,7 +88,7 @@ async def categorize_items(df: pl.DataFrame) -> pl.DataFrame:
 
 def main() -> None:
     """Main function to run the newsletter generator."""
-    basicConfig(level=LOGGING_LEVEL)
+    basicConfig(level=config.LOGGING_LEVEL)
 
     # Step 1: Load recent items
     df = load_recent_items(
