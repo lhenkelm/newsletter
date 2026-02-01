@@ -59,25 +59,29 @@ async def categorize_items(df: pl.DataFrame) -> pl.DataFrame:
     """
     agent = await CategoryAgent.from_config(config)
 
-    # Categorize each item
-    categories_list = []
-    reasonings = []
-
-    for row in df.iter_rows(named=True):
-        result = await agent.select_categories(
-            title=row.get("title", ""),
-            short_summary=row.get("short_summary", ""),
-            application_tags=row.get("application_tags"),
-            tools_tags=row.get("tools_tags"),
-            techniques_tags=row.get("techniques_tags"),
-        )
-        categories_list.append(result.categories)
-        reasonings.append(result.reasoning)
+    tasks = []
+    async with asyncio.TaskGroup() as tg:
+        for row in df.iter_rows(named=True):
+            tasks.append(
+                tg.create_task(
+                    agent.select_categories(
+                        title=row["title"],
+                        short_summary=row["short_summary"],
+                        application_tags=row["application_tags"],
+                        tools_tags=row["tools_tags"],
+                        techniques_tags=row["techniques_tags"],
+                    )
+                )
+            )
+    results = ((task.result()) for task in tasks)
+    categories, reasonings = zip(
+        *((result.categories, result.reasoning) for result in results)
+    )
 
     # Add categories as new columns
     return df.with_columns(
         [
-            pl.Series("interest_categories", categories_list),
+            pl.Series("interest_categories", categories),
             pl.Series("category_reasoning", reasonings),
         ]
     )
