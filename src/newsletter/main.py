@@ -22,23 +22,23 @@ async def score_items(df: pl.DataFrame) -> pl.DataFrame:
     Returns:
         DataFrame with added 'relevance_score' and 'score_reasoning' columns.
     """
-    # Initialize and load the scoring agent
     agent = ScoringAgent.from_config(config)
 
-    # Score each item
-    scores = []
-    reasonings = []
-
-    for row in df.iter_rows(named=True):
-        result = await agent.score_item(
-            title=row.get("title", ""),
-            short_summary=row.get("summary", ""),
-            industry=row.get("industry", ""),
-            company=row.get("company", ""),
-        )
-        scores.append(result.score)
-        reasonings.append(result.reasoning)
-
+    tasks = []
+    async with asyncio.TaskGroup() as tg:
+        for row in df.iter_rows(named=True):
+            tasks.append(
+                tg.create_task(
+                    agent.score_item(
+                        title=row["title"],
+                        short_summary=row["short_summary"],
+                        industry=row["industry"],
+                        company=row["company"],
+                    )
+                )
+            )
+    results = ((task.result()) for task in tasks)
+    scores, reasonings = zip(*((result.score, result.reasoning) for result in results))
     # Add scores as new columns
     return df.with_columns(
         [
