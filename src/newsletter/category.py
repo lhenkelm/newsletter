@@ -66,7 +66,12 @@ class CategorySelection(BaseModel):
 
 
 class CategoryAgent:
-    """Async agent for assigning interest categories to news items."""
+    """Async agent for assigning interest categories to news items.
+
+    Attributes:
+        agent: Underlying pydantic-ai Agent instance.
+        profile: Textual audience profile for category selection.
+    """
 
     def __init__(self, agent: Agent, profile: str):
         """Initialize the category selection agent."""
