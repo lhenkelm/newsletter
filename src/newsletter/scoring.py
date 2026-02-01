@@ -29,6 +29,7 @@ class ScoringAgent:
     Attributes:
         agent: Underlying pydantic-ai Agent instance.
         profile: Textual audience profile for relevance scoring.
+        cache: Optional disk cache for faster development iteration
 
     Recommended usage:
 
