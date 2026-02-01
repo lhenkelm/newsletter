@@ -35,7 +35,7 @@ class ScoringAgent:
     Recommended usage:
 
         import newsletter.config as config
-        agent = ScoringAgent.from_config(config)
+        agent = await ScoringAgent.from_config(config)
         result = await agent.score_item(
             title="...",
             short_summary="...",
