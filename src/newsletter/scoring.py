@@ -14,12 +14,11 @@ class RelevanceScore(BaseModel):
     """Output schema for relevance scoring."""
 
     score: int = Field(
-        ...,
         ge=0,
         le=5,
         description="Relevance score from 0 (irrelevant) to 5 (high priority)",
     )
-    reasoning: str = Field(..., description="Brief explanation of the score")
+    reasoning: str = Field(description="Brief explanation of the score")
 
 
 class ScoringAgent:
