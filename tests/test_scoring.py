@@ -1,7 +1,7 @@
 """Tests for the relevance scoring agent."""
 
 import os
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
 
@@ -25,8 +25,24 @@ def scoring_agent(mock_api_key):
     return ScoringAgent.from_config(MockConfig())
 
 
+@pytest.fixture
+def mock_scoring_agent(scoring_agent):
+    """Mock the agent.run method to return a fake score"""
+    mock_result = AsyncMock()
+    mock_result.output = RelevanceScore(
+        score=4,
+        reasoning="Highly relevant for LLMOps: covers RAG implementation with practical tooling (LangChain) and monitoring strategies applicable to enterprise AI deployments.",
+    )
+
+    async def mock_run(*_a, **_k):
+        return mock_result
+
+    scoring_agent.agent.run = mock_run
+    return scoring_agent
+
+
 @pytest.mark.asyncio
-async def test_scoring_agent_setup_and_run_mocked(scoring_agent):
+async def test_scoring_agent_setup_and_run_mocked(mock_scoring_agent):
     """Test that the scoring agent can be set up and run on a fixed example (mocked).
 
     This test uses a sample news item from the EDA notebook to verify:
@@ -47,20 +63,12 @@ async def test_scoring_agent_setup_and_run_mocked(scoring_agent):
     industry = "Tech"
     company = "Various"
 
-    # Mock the agent.run method to return a fake score
-    mock_result = AsyncMock()
-    mock_result.output = RelevanceScore(
-        score=4,
-        reasoning="Highly relevant for LLMOps: covers RAG implementation with practical tooling (LangChain) and monitoring strategies applicable to enterprise AI deployments.",
+    result = await mock_scoring_agent.score_item(
+        title=title,
+        short_summary=short_summary,
+        industry=industry,
+        company=company,
     )
-
-    with patch.object(scoring_agent.agent, "run", return_value=mock_result):
-        result = await scoring_agent.score_item(
-            title=title,
-            short_summary=short_summary,
-            industry=industry,
-            company=company,
-        )
 
     # Verify the result structure
     assert isinstance(result, RelevanceScore)
