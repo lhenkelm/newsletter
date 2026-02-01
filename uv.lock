@@ -2240,6 +2240,7 @@ name = "newsletter"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "diskcache" },
     { name = "ipykernel" },
     { name = "marimo" },
     { name = "matplotlib" },
@@ -2253,6 +2254,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "diskcache", specifier = ">=5.6.3" },
     { name = "ipykernel", specifier = ">=7.1.0" },
     { name = "marimo", specifier = ">=0.19.4" },
     { name = "matplotlib", specifier = ">=3.10.8" },
