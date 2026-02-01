@@ -1,6 +1,7 @@
 """Main entry point for the newsletter generator."""
 
 import asyncio
+from logging import getLogger, basicConfig
 
 import polars as pl
 
@@ -8,6 +9,9 @@ from newsletter import config
 from newsletter.category import CategoryAgent
 from newsletter.ingest import load_recent_items
 from newsletter.scoring import ScoringAgent
+from src.newsletter.config import LOGGING_LEVEL
+
+_LOGGER = getLogger(__name__)
 
 
 async def score_items(df: pl.DataFrame) -> pl.DataFrame:
@@ -85,6 +89,8 @@ async def categorize_items(df: pl.DataFrame) -> pl.DataFrame:
 
 def main() -> None:
     """Main function to run the newsletter generator."""
+    basicConfig(level=LOGGING_LEVEL)
+
     # Step 1: Load recent items
     df = load_recent_items(
         cutoff_days=config.CUTOFF_DAYS,
@@ -92,20 +98,20 @@ def main() -> None:
         max_items=config.MAX_ITEMS,
         source_uri=config.SOURCE_URI,
     )
-    print(f"Loaded {len(df)} recent items")
+    _LOGGER.info(f"Loaded {len(df)} recent items")
 
     # Step 2: Score items for relevance
-    print("Scoring items for relevance...")
+    _LOGGER.info("Scoring items for relevance...")
     df_scored = asyncio.run(score_items(df))
-    print(f"Scored {len(df_scored)} items")
-    print(
+    _LOGGER.info(f"Scored {len(df_scored)} items")
+    _LOGGER.debug(
         f"Score distribution: {df_scored['relevance_score'].value_counts().sort('relevance_score')}"
     )
 
     # Step 3: Categorize items
-    print("Categorizing items...")
+    _LOGGER.info("Categorizing items...")
     df_categorized = asyncio.run(categorize_items(df_scored))
-    print(f"Categorized {len(df_categorized)} items")
+    _LOGGER.info(f"Categorized {len(df_categorized)} items")
 
     # Show category distribution
     all_categories = (
@@ -114,7 +120,7 @@ def main() -> None:
         .value_counts()
         .sort("count", descending=True)
     )
-    print(f"Category distribution:\n{all_categories}")
+    _LOGGER.debug(f"Category distribution:\n{all_categories}")
 
 
 if __name__ == "__main__":

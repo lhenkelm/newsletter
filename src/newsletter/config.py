@@ -19,3 +19,12 @@ AUDIENCE_PROFILE_PATH = os.getenv("AUDIENCE_PROFILE_PATH", "data/audience_profil
 
 # Category Agent Configuration
 CATEGORY_MODEL = os.getenv("CATEGORY_MODEL", "openai:gpt-4o-mini")
+
+_VALID_LOG_LEVELS = ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL")
+LOGGING_LEVEL = str(os.getenv("LOGGING_LEVEL", "WARNING")).upper()
+if LOGGING_LEVEL not in _VALID_LOG_LEVELS:
+    raise RuntimeError(
+        "unexpected LOGGING_LEVEL env. variable value: "
+        f"expected one of {_VALID_LOG_LEVELS!r}, "
+        f"got {LOGGING_LEVEL}"
+    )

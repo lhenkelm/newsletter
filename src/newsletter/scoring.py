@@ -5,6 +5,10 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent
 
+from logging import getLogger
+
+_LOGGER = getLogger(__name__)
+
 
 class RelevanceScore(BaseModel):
     """Output schema for relevance scoring."""
@@ -29,6 +33,7 @@ class ScoringAgent:
         """
         self.agent = Agent(model)
         self.profile: str | None = None
+        _LOGGER.debug(f"initialized {self!r}")
 
     def load_audience_profile(
         self, profile_path: str | Path = "data/audience_profile.txt"
@@ -38,8 +43,10 @@ class ScoringAgent:
         Args:
             profile_path: Path to the audience profile text file.
         """
+        _LOGGER.debug(f"loading profile from {profile_path=!r}")
         path = Path(profile_path)
         self.profile = path.read_text().strip()
+        _LOGGER.debug(f"loaded {self.profile=!r}")
 
     async def score_item(
         self,
@@ -84,6 +91,7 @@ Consider:
 3. Direct impact potential for audience's AI/LLMOps work
 
 Return a score from 0 (irrelevant) to 5 (high priority) with brief reasoning, in JSON format."""
-
+        _LOGGER.debug(f"relevance-scoring item with {title=!r}")
         result = await self.agent.run(prompt, output_type=RelevanceScore)
+        _LOGGER.debug(f"{result=!r}")
         return result.output
