@@ -5,6 +5,7 @@ from typing import Any, Self, Type
 
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent
+from diskcache import Cache
 
 from logging import getLogger
 
@@ -41,12 +42,8 @@ class ScoringAgent:
         )
     """
 
-    def __init__(self, agent: Agent, profile: str):
-        """Initialize the scoring agent.
-
-        Args:
-            model: Model identifier for pydantic-ai Agent.
-        """
+    def __init__(self, agent: Agent, profile: str, cache: Cache | None = None):
+        """Initialize the scoring agent."""
         if not isinstance(agent, Agent):
             raise TypeError(
                 f"{self.__class__.__name__} expected 'agent' to be an instance of 'Agent'"
@@ -61,6 +58,7 @@ class ScoringAgent:
         if not profile:
             raise ValueError(f"Audience profile cannot be empty, got {profile!r}")
         self.profile = profile
+        self.cache = cache
         _LOGGER.debug(f"initialized {self!r}")
 
     @staticmethod
@@ -85,11 +83,16 @@ class ScoringAgent:
         Args:
             config: Configuration module with attributes
                 SCORING_MODEL and
-                AUDIENCE_PROFILE_PATH.
+                AUDIENCE_PROFILE_PATH and
+                CACHE_DIRECTORY.
         """
         profile = cls._load_audience_profile(config.AUDIENCE_PROFILE_PATH)
         agent = Agent(config.SCORING_MODEL)
-        return cls(agent=agent, profile=profile)
+        if config.CACHE_DIRECTORY:
+            cache = Cache(config.CACHE_DIRECTORY / cls.__qualname__)
+        else:
+            cache = None
+        return cls(agent=agent, profile=profile, cache=cache)
 
     async def score_item(
         self,
@@ -109,6 +112,18 @@ class ScoringAgent:
         Returns:
             RelevanceScore with integer score 0-5 and reasoning.
         """
+        if self.cache is not None:
+            cache_key = (
+                title,
+                short_summary[:500:5],
+                industry,
+                company,
+                self.profile[:300:3],
+            )
+            if cache_key in self.cache:
+                _LOGGER.debug(f"cache hit for {cache_key=!r}")
+                return self.cache[cache_key]
+            _LOGGER.debug(f"cache miss for {cache_key=!r}")
 
         prompt = f"""Score this news item's relevance for the target audience.
 
@@ -130,4 +145,7 @@ Return a score from 0 (irrelevant) to 5 (high priority) with brief reasoning, in
         _LOGGER.debug(f"relevance-scoring item with {title=!r}")
         result = await self.agent.run(prompt, output_type=RelevanceScore)
         _LOGGER.debug(f"{result=!r}")
+        if self.cache is not None:
+            self.cache[cache_key] = result.output
+            _LOGGER.debug(f"cached result for {cache_key=!r}")
         return result.output

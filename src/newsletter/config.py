@@ -1,6 +1,7 @@
 """Configuration module for newsletter generator."""
 
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -28,3 +29,8 @@ if LOGGING_LEVEL not in _VALID_LOG_LEVELS:
         f"expected one of {_VALID_LOG_LEVELS!r}, "
         f"got {LOGGING_LEVEL}"
     )
+
+_CACHE_DIRECTORY = os.getenv("CACHE_DIRECTORY", None)
+CACHE_DIRECTORY: Path | None = None
+if _CACHE_DIRECTORY is not None:
+    CACHE_DIRECTORY = Path(_CACHE_DIRECTORY.strip())

@@ -21,6 +21,7 @@ def scoring_agent(mock_api_key):
     class MockConfig:
         SCORING_MODEL = "openai:gpt4o-mini"
         AUDIENCE_PROFILE_PATH = "data/audience_profile.txt"
+        CACHE_DIRECTORY = None
 
     return ScoringAgent.from_config(MockConfig())
 
