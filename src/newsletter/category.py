@@ -1,12 +1,13 @@
 """Category selection agent for news items."""
 
+import asyncio
 from logging import getLogger
 from typing import Any, Literal, Self, Type
 
-from diskcache import Cache
 from pydantic import BaseModel, Field, field_validator
 from pydantic_ai import Agent
 
+from newsletter.async_disk_cache import AsyncDiskCache
 from newsletter.profile import load_audience_profile
 
 _LOGGER = getLogger(__name__)
@@ -86,7 +87,7 @@ class CategoryAgent:
         )
     """
 
-    def __init__(self, agent: Agent, profile: str, cache: Cache | None = None):
+    def __init__(self, agent: Agent, profile: str, cache: AsyncDiskCache | None = None):
         """Initialize the category selection agent."""
         if not isinstance(agent, Agent):
             raise TypeError(
@@ -127,12 +128,21 @@ class CategoryAgent:
                 AUDIENCE_PROFILE_PATH and
                 CACHE_DIRECTORY.
         """
-        profile = await load_audience_profile(config.AUDIENCE_PROFILE_PATH)
         agent = Agent(config.CATEGORY_MODEL)
+        async with asyncio.TaskGroup() as tg:
+            load_profile_task = tg.create_task(
+                load_audience_profile(config.AUDIENCE_PROFILE_PATH)
+            )
+            if config.CACHE_DIRECTORY:
+                init_cache_task = tg.create_task(
+                    AsyncDiskCache.from_cache_dir_path(
+                        config.CACHE_DIRECTORY / cls.__qualname__
+                    )
+                )
+        profile = await load_profile_task
+        cache = None
         if config.CACHE_DIRECTORY:
-            cache = Cache(config.CACHE_DIRECTORY / cls.__qualname__)
-        else:
-            cache = None
+            cache = await init_cache_task
         return cls(agent, profile, cache)
 
     async def select_categories(
@@ -164,9 +174,9 @@ class CategoryAgent:
                 techniques_tags,
                 self.profile[:300:3],
             )
-            if cache_key in self.cache:
+            if await self.cache.contains(cache_key):
                 _LOGGER.debug(f"cache hit for {cache_key=!r}")
-                return self.cache[cache_key]
+                return await self.cache.get_item(cache_key)
             _LOGGER.debug(f"cache miss for {cache_key=!r}")
 
         _LOGGER.debug(f"selecting categories for item with {title=!r}")
@@ -204,6 +214,6 @@ Adhere to the schema : {CategorySelection.model_json_schema()}"""
         result = await self.agent.run(prompt, output_type=CategorySelection)
         _LOGGER.debug(f"{result=!r}")
         if self.cache is not None:
-            self.cache[cache_key] = result.output
+            await self.cache.set_item(cache_key, result.output)
             _LOGGER.debug(f"cached result for {cache_key=!r}")
         return result.output

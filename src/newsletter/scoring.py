@@ -1,13 +1,14 @@
 """Relevance scoring agent for news items."""
 
+import asyncio
 from typing import Any, Self, Type
 
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent
-from diskcache import Cache
 
 from logging import getLogger
 
+from newsletter.async_disk_cache import AsyncDiskCache
 from newsletter.profile import load_audience_profile
 
 _LOGGER = getLogger(__name__)
@@ -44,7 +45,7 @@ class ScoringAgent:
         )
     """
 
-    def __init__(self, agent: Agent, profile: str, cache: Cache | None = None):
+    def __init__(self, agent: Agent, profile: str, cache: AsyncDiskCache | None = None):
         """Initialize the scoring agent."""
         if not isinstance(agent, Agent):
             raise TypeError(
@@ -85,12 +86,21 @@ class ScoringAgent:
                 AUDIENCE_PROFILE_PATH and
                 CACHE_DIRECTORY.
         """
-        profile = await load_audience_profile(config.AUDIENCE_PROFILE_PATH)
         agent = Agent(config.SCORING_MODEL)
+        async with asyncio.TaskGroup() as tg:
+            profile_load_task = tg.create_task(
+                load_audience_profile(config.AUDIENCE_PROFILE_PATH)
+            )
+            if config.CACHE_DIRECTORY:
+                cache_init_task = tg.create_task(
+                    AsyncDiskCache.from_cache_dir_path(
+                        config.CACHE_DIRECTORY / cls.__qualname__
+                    )
+                )
+        profile = await profile_load_task
+        cache = None
         if config.CACHE_DIRECTORY:
-            cache = Cache(config.CACHE_DIRECTORY / cls.__qualname__)
-        else:
-            cache = None
+            cache = await cache_init_task
         return cls(agent=agent, profile=profile, cache=cache)
 
     async def score_item(
@@ -119,9 +129,9 @@ class ScoringAgent:
                 company,
                 self.profile[:300:3],
             )
-            if cache_key in self.cache:
+            if await self.cache.contains(cache_key):
                 _LOGGER.debug(f"cache hit for {cache_key=!r}")
-                return self.cache[cache_key]
+                return await self.cache.get_item(cache_key)
             _LOGGER.debug(f"cache miss for {cache_key=!r}")
 
         prompt = f"""Score this news item's relevance for the target audience.
@@ -145,6 +155,6 @@ Return a score from 0 (irrelevant) to 5 (high priority) with brief reasoning, in
         result = await self.agent.run(prompt, output_type=RelevanceScore)
         _LOGGER.debug(f"{result=!r}")
         if self.cache is not None:
-            self.cache[cache_key] = result.output
+            await self.cache.set_item(cache_key, result.output)
             _LOGGER.debug(f"cached result for {cache_key=!r}")
         return result.output
