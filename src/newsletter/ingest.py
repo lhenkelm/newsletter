@@ -2,12 +2,14 @@
 
 from logging import getLogger
 from datetime import datetime, timedelta, timezone
+from logfire import instrument
 
 import polars as pl
 
 _LOGGER = getLogger(__name__)
 
 
+@instrument()
 async def load_recent_items(
     cutoff_days: int,
     min_items: int,

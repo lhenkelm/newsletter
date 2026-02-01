@@ -3,6 +3,7 @@
 import asyncio
 from typing import Any, Self, Type
 
+from logfire import instrument
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent
 
@@ -77,6 +78,7 @@ class ScoringAgent:
         )
 
     @classmethod
+    @instrument()
     async def from_config(cls: Type[Self], config: Any) -> Self:
         """Create a ScoringAgent instance from configuration.
 
@@ -86,7 +88,7 @@ class ScoringAgent:
                 AUDIENCE_PROFILE_PATH and
                 CACHE_DIRECTORY.
         """
-        agent = Agent(config.SCORING_MODEL)
+        agent = Agent(config.SCORING_MODEL, name=cls.__qualname__)
         async with asyncio.TaskGroup() as tg:
             profile_load_task = tg.create_task(
                 load_audience_profile(config.AUDIENCE_PROFILE_PATH)
@@ -103,6 +105,7 @@ class ScoringAgent:
             cache = await cache_init_task
         return cls(agent=agent, profile=profile, cache=cache)
 
+    @instrument()
     async def score_item(
         self,
         title: str,

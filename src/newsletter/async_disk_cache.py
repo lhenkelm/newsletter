@@ -9,6 +9,8 @@ from diskcache import Cache
 
 import asyncio
 
+from logfire import instrument
+
 
 class AsyncDiskCache[K: Hashable, V]:
     """
@@ -49,6 +51,7 @@ class AsyncDiskCache[K: Hashable, V]:
         self._lock = lock
 
     @classmethod
+    @instrument()
     async def from_cache_dir_path(cls: Type[Self], cache_dir_path: Path) -> Self:
         """
         Create an AsyncDiskCache instance from a cache directory path.
@@ -82,6 +85,7 @@ class AsyncDiskCache[K: Hashable, V]:
         async with self._lock:
             return await asyncio.to_thread(func)
 
+    @instrument()
     async def contains(self, key: K) -> bool:
         """
         Check if a key is in the cache.
@@ -96,6 +100,7 @@ class AsyncDiskCache[K: Hashable, V]:
         """
         return await self._locked_to_thread(lambda: key in self._cache_impl)
 
+    @instrument()
     async def get_item(self, key: K) -> V:
         """
         Get an item from the cache.
@@ -112,6 +117,7 @@ class AsyncDiskCache[K: Hashable, V]:
         """
         return await self._locked_to_thread(lambda: self._cache_impl[key])
 
+    @instrument()
     async def set_item(self, key: K, value: V) -> None:
         """
         Set an item in the cache.

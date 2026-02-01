@@ -14,10 +14,17 @@ import logfire
 
 logfire.configure()
 logfire.instrument_pydantic_ai()
+logfire.instrument_requests()
+logfire.instrument_httpx(capture_all=True)
+logfire.instrument_system_metrics(base="full")
+logfire.instrument_sqlite3()
+logfire.instrument_redis(capture_statement=True)
+
 
 _LOGGER = getLogger(__name__)
 
 
+@logfire.instrument(span_name="newsletter.score_items")
 async def score_items(df: pl.DataFrame, agent: ScoringAgent) -> pl.DataFrame:
     """Score items for relevance to the target audience.
 
@@ -60,6 +67,7 @@ async def score_items(df: pl.DataFrame, agent: ScoringAgent) -> pl.DataFrame:
     return df
 
 
+@logfire.instrument(span_name="newsletter.categorize_items")
 async def categorize_items(df: pl.DataFrame, agent: CategoryAgent) -> pl.DataFrame:
     """Assign interest categories to news items.
 
@@ -110,9 +118,13 @@ async def categorize_items(df: pl.DataFrame, agent: CategoryAgent) -> pl.DataFra
     return df
 
 
+@logfire.instrument(span_name="newsletter.main")
 async def main() -> None:
     """Main function to run the newsletter generator."""
-    basicConfig(level=config.LOGGING_LEVEL)
+    basicConfig(
+        level=config.LOGGING_LEVEL,
+        handlers=[logfire.LogfireLoggingHandler(level=DEBUG)],
+    )
 
     # initialisation of data and agents can be done concurrently
     async with asyncio.TaskGroup() as tg:

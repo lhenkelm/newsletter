@@ -10,10 +10,12 @@ from logging import getLogger
 from pathlib import Path
 
 from async_lru import alru_cache
+from logfire import instrument
 
 _LOGGER = getLogger(__name__)
 
 
+@instrument()
 @alru_cache
 async def load_audience_profile(
     profile_path: str | Path = "data/audience_profile.txt",

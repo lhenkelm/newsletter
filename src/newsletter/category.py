@@ -4,6 +4,7 @@ import asyncio
 from logging import getLogger
 from typing import Any, Literal, Self, Type
 
+from logfire import instrument
 from pydantic import BaseModel, Field, field_validator
 from pydantic_ai import Agent
 
@@ -119,6 +120,7 @@ class CategoryAgent:
         )
 
     @classmethod
+    @instrument()
     async def from_config(cls: Type[Self], config: Any) -> Self:
         """Create a CategoryAgent instance from configuration.
 
@@ -128,7 +130,7 @@ class CategoryAgent:
                 AUDIENCE_PROFILE_PATH and
                 CACHE_DIRECTORY.
         """
-        agent = Agent(config.CATEGORY_MODEL)
+        agent = Agent(config.CATEGORY_MODEL, name=cls.__qualname__)
         async with asyncio.TaskGroup() as tg:
             load_profile_task = tg.create_task(
                 load_audience_profile(config.AUDIENCE_PROFILE_PATH)
@@ -145,6 +147,7 @@ class CategoryAgent:
             cache = await init_cache_task
         return cls(agent, profile, cache)
 
+    @instrument()
     async def select_categories(
         self,
         title: str,
