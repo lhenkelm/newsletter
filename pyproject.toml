@@ -21,8 +21,12 @@ dependencies = [
     "polars[timezone]>=1.37.1;platform_system=='Windows'",
     "pydantic-ai>=1.43.0",
     "pytest>=9.0.2",
-    "pytest-asyncio>=1.3.0",
     "python-dotenv>=1.2.1",
+]
+
+[dependency-groups]
+dev = [
+    "pytest-asyncio>=1.3.0",
 ]
 
 [tool.mypy]

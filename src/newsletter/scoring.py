@@ -1,6 +1,5 @@
 """Relevance scoring agent for news items."""
 
-from pathlib import Path
 from typing import Any, Self, Type
 
 from pydantic import BaseModel, Field
@@ -8,6 +7,8 @@ from pydantic_ai import Agent
 from diskcache import Cache
 
 from logging import getLogger
+
+from newsletter.profile import load_audience_profile
 
 _LOGGER = getLogger(__name__)
 
@@ -74,23 +75,8 @@ class ScoringAgent:
             f"cache={self.cache!r})"
         )
 
-    @staticmethod
-    def _load_audience_profile(
-        profile_path: str | Path = "data/audience_profile.txt",
-    ) -> str:
-        """Load audience profile from file.
-
-        Args:
-            profile_path: Path to the audience profile text file.
-        """
-        _LOGGER.debug(f"loading profile from {profile_path=!r}")
-        path = Path(profile_path)
-        profile = path.read_text().strip()
-        _LOGGER.debug(f"loaded {profile=!r}")
-        return profile
-
     @classmethod
-    def from_config(cls: Type[Self], config: Any) -> Self:
+    async def from_config(cls: Type[Self], config: Any) -> Self:
         """Create a ScoringAgent instance from configuration.
 
         Args:
@@ -99,7 +85,7 @@ class ScoringAgent:
                 AUDIENCE_PROFILE_PATH and
                 CACHE_DIRECTORY.
         """
-        profile = cls._load_audience_profile(config.AUDIENCE_PROFILE_PATH)
+        profile = await load_audience_profile(config.AUDIENCE_PROFILE_PATH)
         agent = Agent(config.SCORING_MODEL)
         if config.CACHE_DIRECTORY:
             cache = Cache(config.CACHE_DIRECTORY / cls.__qualname__)

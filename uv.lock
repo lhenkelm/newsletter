@@ -2258,8 +2258,12 @@ dependencies = [
     { name = "polars", extra = ["timezone"], marker = "sys_platform == 'win32'" },
     { name = "pydantic-ai" },
     { name = "pytest" },
-    { name = "pytest-asyncio" },
     { name = "python-dotenv" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest-asyncio" },
 ]
 
 [package.metadata]
@@ -2273,9 +2277,11 @@ requires-dist = [
     { name = "polars", extras = ["timezone"], marker = "sys_platform == 'win32'", specifier = ">=1.37.1" },
     { name = "pydantic-ai", specifier = ">=1.43.0" },
     { name = "pytest", specifier = ">=9.0.2" },
-    { name = "pytest-asyncio", specifier = ">=1.3.0" },
     { name = "python-dotenv", specifier = ">=1.2.1" },
 ]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest-asyncio", specifier = ">=1.3.0" }]
 
 [[package]]
 name = "nexus-rpc"

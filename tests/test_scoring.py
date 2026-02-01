@@ -4,6 +4,7 @@ import os
 from unittest.mock import AsyncMock
 
 import pytest
+import pytest_asyncio
 
 from newsletter.scoring import RelevanceScore, ScoringAgent
 
@@ -14,8 +15,8 @@ def mock_api_key(monkeypatch):
     monkeypatch.setenv("OPENAI_API_KEY", "sk-test-fake-key-for-testing")
 
 
-@pytest.fixture
-def scoring_agent(mock_api_key):
+@pytest_asyncio.fixture
+async def scoring_agent(mock_api_key):
     """Create a scoring agent instance."""
 
     class MockConfig:
@@ -23,11 +24,12 @@ def scoring_agent(mock_api_key):
         AUDIENCE_PROFILE_PATH = "data/audience_profile.txt"
         CACHE_DIRECTORY = None
 
-    return ScoringAgent.from_config(MockConfig())
+    agent = await ScoringAgent.from_config(MockConfig())
+    return agent
 
 
-@pytest.fixture
-def mock_scoring_agent(scoring_agent):
+@pytest_asyncio.fixture
+async def mock_scoring_agent(scoring_agent):
     """Mock the agent.run method to return a fake score"""
     mock_result = AsyncMock()
     mock_result.output = RelevanceScore(

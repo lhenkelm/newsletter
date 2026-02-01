@@ -22,7 +22,7 @@ async def score_items(df: pl.DataFrame) -> pl.DataFrame:
     Returns:
         DataFrame with added 'relevance_score' and 'score_reasoning' columns.
     """
-    agent = ScoringAgent.from_config(config)
+    agent = await ScoringAgent.from_config(config)
 
     tasks = []
     async with asyncio.TaskGroup() as tg:
