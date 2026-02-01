@@ -27,7 +27,7 @@ notebooks/            # EDA and exploration
 - `uv run <command>` - run any Python command or script
 - `uv run python main.py` - run the CLI
 - `uv run marimo edit notebooks/manual_look.py` - run Marimo
-- Python 3.11+ required
+- Python 3.12+ required
 
 ### LLM Integration
 - **Use pydantic-ai** with OpenAI backend
