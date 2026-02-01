@@ -86,7 +86,7 @@ async def categorize_items(df: pl.DataFrame) -> pl.DataFrame:
     )
 
 
-def main() -> None:
+async def main() -> None:
     """Main function to run the newsletter generator."""
     basicConfig(level=config.LOGGING_LEVEL)
 
@@ -101,7 +101,7 @@ def main() -> None:
 
     # Step 2: Score items for relevance
     _LOGGER.info("Scoring items for relevance...")
-    df_scored = asyncio.run(score_items(df))
+    df_scored = await score_items(df)
     _LOGGER.info(f"Scored {len(df_scored)} items")
     _LOGGER.debug(
         f"Score distribution: {df_scored['relevance_score'].value_counts().sort('relevance_score')}"
@@ -109,7 +109,7 @@ def main() -> None:
 
     # Step 3: Categorize items
     _LOGGER.info("Categorizing items...")
-    df_categorized = asyncio.run(categorize_items(df_scored))
+    df_categorized = await categorize_items(df_scored)
     _LOGGER.info(f"Categorized {len(df_categorized)} items")
 
     # Show category distribution
@@ -123,4 +123,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
