@@ -3,6 +3,7 @@
 from logging import getLogger
 from typing import Any, Literal, Self, Type
 
+from diskcache import Cache
 from pydantic import BaseModel, Field, field_validator
 from pydantic_ai import Agent
 
@@ -71,6 +72,7 @@ class CategoryAgent:
     Attributes:
         agent: Underlying pydantic-ai Agent instance.
         profile: Textual audience profile for category selection.
+        cache: Optional disk cache for faster development iteration.
 
     Recommended usage:
         import newsletter.config as config
@@ -84,7 +86,7 @@ class CategoryAgent:
         )
     """
 
-    def __init__(self, agent: Agent, profile: str):
+    def __init__(self, agent: Agent, profile: str, cache: Cache | None = None):
         """Initialize the category selection agent."""
         if not isinstance(agent, Agent):
             raise TypeError(
@@ -100,6 +102,7 @@ class CategoryAgent:
         if not profile:
             raise ValueError(f"Audience profile cannot be empty, got {profile!r}")
         self.profile = profile
+        self.cache = cache
         _LOGGER.debug(f"initialised {self=!r}")
 
     @classmethod
@@ -109,19 +112,24 @@ class CategoryAgent:
         Args:
             config: Configuration module with attributes
                 CATEGORY_MODEL and
-                AUDIENCE_PROFILE_PATH.
+                AUDIENCE_PROFILE_PATH and
+                CACHE_DIRECTORY.
         """
         profile = await load_audience_profile(config.AUDIENCE_PROFILE_PATH)
         agent = Agent(config.CATEGORY_MODEL)
-        return cls(agent, profile)
+        if config.CACHE_DIRECTORY:
+            cache = Cache(config.CACHE_DIRECTORY / cls.__qualname__)
+        else:
+            cache = None
+        return cls(agent, profile, cache)
 
     async def select_categories(
         self,
         title: str,
         short_summary: str,
-        application_tags: str | None = None,
-        tools_tags: str | None = None,
-        techniques_tags: str | None = None,
+        application_tags: str,
+        tools_tags: str,
+        techniques_tags: str,
     ) -> CategorySelection:
         """Assign interest categories to a news item.
 
@@ -134,10 +142,21 @@ class CategoryAgent:
 
         Returns:
             CategorySelection with 1-3 categories and reasoning.
-
-        Raises:
-            ValueError: If audience profile has not been loaded.
         """
+        if self.cache is not None:
+            cache_key = (
+                title,
+                short_summary[:500:5],
+                application_tags,
+                tools_tags,
+                techniques_tags,
+                self.profile[:300:3],
+            )
+            if cache_key in self.cache:
+                _LOGGER.debug(f"cache hit for {cache_key=!r}")
+                return self.cache[cache_key]
+            _LOGGER.debug(f"cache miss for {cache_key=!r}")
+
         _LOGGER.debug(f"selecting categories for item with {title=!r}")
 
         # Format existing tags
@@ -172,4 +191,7 @@ Adhere to the schema : {CategorySelection.model_json_schema()}"""
 
         result = await self.agent.run(prompt, output_type=CategorySelection)
         _LOGGER.debug(f"{result=!r}")
+        if self.cache is not None:
+            self.cache[cache_key] = result.output
+            _LOGGER.debug(f"cached result for {cache_key=!r}")
         return result.output

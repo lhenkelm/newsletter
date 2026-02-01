@@ -26,6 +26,7 @@ async def category_agent(mock_api_key):
     class MockConfig:
         CATEGORY_MODEL = "openai:gpt4o-mini"
         AUDIENCE_PROFILE_PATH = "./data/audience_profile.txt"
+        CACHE_DIRECTORY = None
 
     agent = await CategoryAgent.from_config(MockConfig())
     return agent
@@ -102,29 +103,6 @@ class TestCategoryAgentSelection:
         assert len(result.categories) <= 3
         assert all(cat in ALLOWED_CATEGORIES for cat in result.categories)
         assert len(result.reasoning) > 0
-
-    @pytest.mark.asyncio
-    async def test_select_categories_without_optional_tags(self, category_agent):
-        """Test category selection works without optional tags."""
-        title = "New Telecom AI Platform Announced"
-        short_summary = (
-            "Major telecom provider launches AI-powered network optimization."
-        )
-
-        mock_result = AsyncMock()
-        mock_result.output = CategorySelection(
-            categories=["Telecom Innovation", "AI Infrastructure"],
-            reasoning="Directly relevant to telecom and AI infrastructure.",
-        )
-
-        with patch.object(category_agent.agent, "run", return_value=mock_result):
-            result = await category_agent.select_categories(
-                title=title,
-                short_summary=short_summary,
-            )
-
-        assert isinstance(result, CategorySelection)
-        assert all(cat in ALLOWED_CATEGORIES for cat in result.categories)
 
 
 @pytest.mark.skipif(
