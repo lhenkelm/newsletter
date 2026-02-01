@@ -83,8 +83,7 @@ Consider:
 2. Novelty and actionability
 3. Direct impact potential for audience's AI/LLMOps work
 
-Return a score from 0 (irrelevant) to 5 (high priority) with brief reasoning."""
+Return a score from 0 (irrelevant) to 5 (high priority) with brief reasoning, in JSON format."""
 
         result = await self.agent.run(prompt, output_type=RelevanceScore)
-        # In pydantic-ai, when output_type is specified, result.output contains the structured data
         return result.output
