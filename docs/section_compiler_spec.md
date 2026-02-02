@@ -2,7 +2,7 @@
 1. Goal: select final newsletter items from scored and categorized dataset, choosing up to 10 items across up to 3 categories.
 2. Framework: async pydantic-ai Agent('openai:gpt-4o-mini') invoked inside pipeline.
 3. Inputs: augmented DataFrame with columns: title, full_summary, source_url, industry, company, relevance_score, score_reasoning, interest_categories, category_reasoning.
-     - the agent recieves a subset of the dataframe to start with: all items, sorted by relevance_score descending,
+     - the agent receives a subset of the dataframe to start with: all items, sorted by relevance_score descending,
         projected to only index, title, relevance_score, and interest_categories columns.
      - the agent also has access to the audience profile text in its instructions. 
      - The agent can refer to the full dataframe as needed for details on each item, using tools
@@ -15,17 +15,24 @@
    - Within each category, rank by relevance_score, then by recency (created_at).
    - Ensure diversity: avoid multiple items from same company unless exceptionally relevant.
 6. Prompt: given candidate items with scores and categories, select up to 10 items distributed across up to 3 categories that maximize newsletter value for the audience.
-7. Output: mapping of section names to list of item tuples, matching newsletter writer input format.
-8. Schema: wrap response in BaseModel with fields:
-   - section_items: dict[str, list[SectionItem]] — maps category name to list of SectionItem objects with index, title, full_summary, source_url.
-   - selected_categories: list[str] (the 3 or fewer chosen sections).
+7. LLM Output: lightweight index-only selection to minimize token usage and avoid hallucination.
+8. LLM Schema (LLMSectionSelection): wrap LLM response in BaseModel with fields:
+   - section_indices: dict[str, list[int]] — maps category name to list of item indices from the DataFrame.
    - selection_reasoning: str (brief explanation of choices).
-9. Constraints: max 10 items total; max 3 categories; at least 1 item per selected category.
-10. Output format example:
+9. Hydration: after LLM returns indices, compile_sections programmatically hydrates full item data (title, full_summary, source_url) from the DataFrame.
+10. Final Output Schema (SectionSelection): returned from compile_sections with fields:
+   - section_items: dict[str, list[SectionItem]] — maps category name to list of SectionItem objects with index, title, full_summary, source_url.
+   - selected_categories: list[str] (the 3 or fewer chosen sections, derived from section_items keys).
+   - selection_reasoning: str (from LLM output).
+11. Constraints: max 10 items total; max 3 categories; at least 1 item per selected category.
+12. LLM Output format example:
     ```python
     {
-        "AI Engineering": [{"index": 0, "title": "First Article Title", "full_summary": "Full summary of first article...", "source_url": "https://example.com/1"}, ...],
-        "Industry News": [{"index": 1, "title": "Second Article Title", "full_summary": "Full summary of second article...", "source_url": "https://example.com/2"}, ...]
+        "section_indices": {
+            "AI Engineering": [0, 3, 7],
+            "Industry News": [1, 5]
+        },
+        "selection_reasoning": "Selected high-scoring items with category diversity..."
     }
     ```
-11. Usage: output feeds directly into newsletter writer agent; section_items dict passed as-is to writer.
+13. Usage: output feeds directly into newsletter writer agent; section_items dict passed as-is to writer.
