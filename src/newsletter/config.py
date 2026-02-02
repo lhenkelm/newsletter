@@ -21,6 +21,9 @@ AUDIENCE_PROFILE_PATH = os.getenv("AUDIENCE_PROFILE_PATH", "data/audience_profil
 # Category Agent Configuration
 CATEGORY_MODEL = os.getenv("CATEGORY_MODEL", "openai:gpt-4o-mini")
 
+# Section Compiler Agent Configuration
+COMPILER_MODEL = os.getenv("COMPILER_MODEL", "openai:gpt-4o-mini")
+
 _VALID_LOG_LEVELS = ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL")
 LOGGING_LEVEL = str(os.getenv("LOGGING_LEVEL", "WARNING")).upper()
 if LOGGING_LEVEL not in _VALID_LOG_LEVELS:
