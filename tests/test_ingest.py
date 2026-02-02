@@ -9,9 +9,10 @@ from newsletter.ingest import load_recent_items
 @pytest.mark.asyncio
 async def test_load_recent_items_returns_dataframe():
     """Test that load_recent_items returns a Polars DataFrame with expected columns."""
-    # disable warnings to avoid flaky warns
     df = await load_recent_items(
-        cutoff_days=7,
+        # longer cutoff to avoid empty data during tests
+        cutoff_days=31,
+        # min/max settings disable warnings to avoid flaky warns
         min_items=0,
         max_items=500,
         source_uri="hf://datasets/zenml/llmops-database/data/train-00000-of-00001.parquet",
