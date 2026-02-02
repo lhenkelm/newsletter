@@ -186,6 +186,17 @@ class SectionCompilerAgent:
 
         return cls(agent, profile, cache)
 
+    def _build_cache_key(self, df: pl.DataFrame) -> tuple:
+        """Build a hashable cache key from the DataFrame.
+
+        Uses Polars hash_rows to create a unique key that captures the input state.
+        """
+        # Hash relevant columns for cache key
+        df_for_key = df.sort("index").select("index", "title", "relevance_score")
+        row_hashes = tuple(df_for_key.hash_rows().to_list())
+        # Include profile hash to invalidate cache on profile changes
+        return (row_hashes, hash(self.profile))
+
     @instrument()
     async def compile_sections(self, df: pl.DataFrame) -> SectionSelection:
         """Select final newsletter items from scored and categorized dataset.
@@ -215,6 +226,16 @@ class SectionCompilerAgent:
         missing = required_cols - set(df.columns)
         if missing:
             raise ValueError(f"DataFrame missing required columns: {missing}")
+
+        # Build cache key (used for both cache lookup and storage)
+        cache_key = self._build_cache_key(df) if self.cache is not None else None
+
+        # Check cache first if available
+        if self.cache is not None and cache_key is not None:
+            if await self.cache.contains(cache_key):
+                _LOGGER.debug("cache hit for section compilation")
+                return await self.cache.get_item(cache_key)
+            _LOGGER.debug("cache miss for section compilation")
 
         # Sort by relevance_score descending and prepare subset for agent
         df_sorted = df.sort("relevance_score", descending=True)
@@ -263,6 +284,11 @@ Use the 'full_summary' text (not short_summary) from item details for the newsle
         _LOGGER.debug(f"Compiling sections from {len(df)} items")
         result = await self.agent.run(prompt, output_type=SectionSelection, deps=deps)
         _LOGGER.debug(f"{result=!r}")
+
+        # Cache the result if caching is enabled
+        if self.cache is not None and cache_key is not None:
+            await self.cache.set_item(cache_key, result.output)
+            _LOGGER.debug("cached section compilation result")
 
         return result.output
 
