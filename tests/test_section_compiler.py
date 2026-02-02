@@ -13,6 +13,7 @@ from newsletter.section_compiler import (
     SectionCompilerAgent,
     SectionItem,
     SectionSelection,
+    LLMSectionSelection,
     get_item_details,
     get_items_by_category,
     get_items_by_company,
@@ -276,38 +277,13 @@ class TestSectionCompilerAgent:
     ):
         """Test section compilation with mocked API response."""
         mock_result = AsyncMock()
-        mock_result.output = SectionSelection(
-            section_items={
-                "RAG & Retrieval": [
-                    SectionItem(
-                        index=0,
-                        title="Building RAG Systems with LangChain",
-                        full_summary="A comprehensive guide to implementing RAG systems...",
-                        source_url="https://example.com/rag",
-                    ),
-                ],
-                "Telecom Innovation": [
-                    SectionItem(
-                        index=2,
-                        title="Telecom AI: 5G Network Optimization",
-                        full_summary="How AI is transforming 5G network management...",
-                        source_url="https://example.com/telecom",
-                    ),
-                ],
-                "AI Engineering": [
-                    SectionItem(
-                        index=1,
-                        title="OpenAI Releases GPT-5",
-                        full_summary="OpenAI announces GPT-5 with improved reasoning...",
-                        source_url="https://example.com/gpt5",
-                    ),
-                ],
+        # Mock returns LLMSectionSelection with indices only
+        mock_result.output = LLMSectionSelection(
+            section_indices={
+                "RAG & Retrieval": [0],
+                "Telecom Innovation": [2],
+                "AI Engineering": [1],
             },
-            selected_categories=[
-                "RAG & Retrieval",
-                "Telecom Innovation",
-                "AI Engineering",
-            ],
             selection_reasoning="Selected highest scoring items with category diversity.",
         )
 
@@ -320,6 +296,15 @@ class TestSectionCompilerAgent:
         assert len(result.selected_categories) == 3
         assert "RAG & Retrieval" in result.selected_categories
         assert len(result.section_items) == 3
+        # Verify hydration worked correctly
+        assert (
+            result.section_items["RAG & Retrieval"][0].title
+            == "Building RAG Systems with LangChain"
+        )
+        assert (
+            result.section_items["RAG & Retrieval"][0].source_url
+            == "https://example.com/rag"
+        )
 
     @pytest.mark.asyncio
     async def test_compile_sections_missing_columns(self, section_compiler_agent):

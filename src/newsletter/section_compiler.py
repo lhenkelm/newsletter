@@ -27,6 +27,41 @@ class SectionItem(BaseModel):
     source_url: str = Field(..., description="The source URL for the item")
 
 
+class LLMSectionSelection(BaseModel):
+    """Lightweight output schema for LLM section selection (indices only)."""
+
+    section_indices: dict[str, list[int]] = Field(
+        ...,
+        description="Maps category name to list of item indices from the DataFrame",
+    )
+    selection_reasoning: str = Field(
+        ...,
+        description="Brief explanation of selection choices",
+    )
+
+    @field_validator("section_indices")
+    @classmethod
+    def validate_section_indices(cls, v: dict[str, list[int]]) -> dict[str, list[int]]:
+        """Validate section indices constraints."""
+        if len(v) > MAX_CATEGORIES:
+            raise ValueError(
+                f"Maximum {MAX_CATEGORIES} categories allowed, got {len(v)}"
+            )
+
+        total_items = sum(len(indices) for indices in v.values())
+        if total_items > MAX_TOTAL_ITEMS:
+            raise ValueError(
+                f"Maximum {MAX_TOTAL_ITEMS} total items allowed, got {total_items}"
+            )
+
+        # Ensure at least 1 item per category
+        for category, indices in v.items():
+            if len(indices) < 1:
+                raise ValueError(f"Category '{category}' must have at least 1 item")
+
+        return v
+
+
 class SectionSelection(BaseModel):
     """Output schema for section compilation."""
 
@@ -276,21 +311,66 @@ Use the available tools to get full details on specific items when needed:
 - get_high_score_items(min_score): Get all items with score >= min_score
 
 Select the best items for the newsletter and return your selection as JSON.
-The section_items should map category names to lists of objects with 'index', 'title', 'full_summary', and 'source_url' fields.
-Use the 'full_summary' text (not short_summary) from item details for the newsletter content."""
+The section_indices should map category names to lists of item indices (integers).
+You only need to return the indices - the full item details will be retrieved programmatically."""
 
         deps = SectionCompilerDeps(df=df_sorted)
 
         _LOGGER.debug(f"Compiling sections from {len(df)} items")
-        result = await self.agent.run(prompt, output_type=SectionSelection, deps=deps)
+        result = await self.agent.run(
+            prompt, output_type=LLMSectionSelection, deps=deps
+        )
         _LOGGER.debug(f"{result=!r}")
+
+        # Hydrate full SectionSelection from LLM's index selection
+        section_selection = self._hydrate_section_selection(result.output, df_sorted)
 
         # Cache the result if caching is enabled
         if self.cache is not None and cache_key is not None:
-            await self.cache.set_item(cache_key, result.output)
+            await self.cache.set_item(cache_key, section_selection)
             _LOGGER.debug("cached section compilation result")
 
-        return result.output
+        return section_selection
+
+    def _hydrate_section_selection(
+        self, llm_selection: LLMSectionSelection, df: pl.DataFrame
+    ) -> SectionSelection:
+        """Build full SectionSelection from LLM's index-only selection.
+
+        Args:
+            llm_selection: The LLM's output with category->indices mapping.
+            df: DataFrame with full item details.
+
+        Returns:
+            Complete SectionSelection with hydrated item data.
+        """
+        # Build index lookup for efficient access
+        index_to_row = {row["index"]: row for row in df.iter_rows(named=True)}
+
+        section_items: dict[str, list[SectionItem]] = {}
+        for category, indices in llm_selection.section_indices.items():
+            items = []
+            for idx in indices:
+                if idx not in index_to_row:
+                    _LOGGER.warning(f"Index {idx} not found in DataFrame, skipping")
+                    continue
+                row = index_to_row[idx]
+                items.append(
+                    SectionItem(
+                        index=row["index"],
+                        title=row["title"],
+                        full_summary=row["full_summary"],
+                        source_url=row["source_url"],
+                    )
+                )
+            if items:  # Only add category if it has valid items
+                section_items[category] = items
+
+        return SectionSelection(
+            section_items=section_items,
+            selected_categories=list(section_items.keys()),
+            selection_reasoning=llm_selection.selection_reasoning,
+        )
 
     def _format_items_for_prompt(self, df: pl.DataFrame) -> str:
         """Format DataFrame subset as text for the prompt."""
