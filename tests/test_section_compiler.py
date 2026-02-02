@@ -209,6 +209,27 @@ class TestSectionSelection:
                 selection_reasoning="Empty category.",
             )
 
+    def test_duplicate_indices_rejected(self):
+        """Test that duplicate indices across sections are rejected."""
+        with pytest.raises(ValueError, match="Duplicate indices found across sections"):
+            LLMSectionSelection(
+                section_indices={
+                    "AI Engineering": [0, 1],
+                    "RAG & Retrieval": [1, 2],  # index 1 is duplicated
+                },
+                selection_reasoning="Has duplicate indices.",
+            )
+
+    def test_duplicate_indices_within_section_rejected(self):
+        """Test that duplicate indices within a single section are rejected."""
+        with pytest.raises(ValueError, match="Duplicate indices found across sections"):
+            LLMSectionSelection(
+                section_indices={
+                    "AI Engineering": [0, 1, 1],  # index 1 repeated within section
+                },
+                selection_reasoning="Has duplicate indices in same section.",
+            )
+
 
 class TestToolFunctions:
     """Tests for the agent tool functions."""

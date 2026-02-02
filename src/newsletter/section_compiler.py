@@ -59,6 +59,16 @@ class LLMSectionSelection(BaseModel):
             if len(indices) < 1:
                 raise ValueError(f"Category '{category}' must have at least 1 item")
 
+        # Ensure no index is repeated across all sections
+        all_indices: list[int] = []
+        for indices in v.values():
+            all_indices.extend(indices)
+        duplicates = {idx for idx in all_indices if all_indices.count(idx) > 1}
+        if duplicates:
+            raise ValueError(
+                f"Duplicate indices found across sections: {sorted(duplicates)}"
+            )
+
         return v
 
 
