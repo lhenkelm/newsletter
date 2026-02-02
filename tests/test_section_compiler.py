@@ -41,7 +41,7 @@ def sample_dataframe():
                 "Fine-tuning LLMs for Enterprise",
                 "Prompt Engineering Best Practices",
             ],
-            "summary": [
+            "full_summary": [
                 "A comprehensive guide to implementing RAG systems...",
                 "OpenAI announces GPT-5 with improved reasoning...",
                 "How AI is transforming 5G network management...",
@@ -108,13 +108,13 @@ class TestSectionSelection:
                     SectionItem(
                         index=0,
                         title="Article 1 Title",
-                        summary="Summary of article 1...",
+                        full_summary="Summary of article 1...",
                         source_url="https://example.com/1",
                     ),
                     SectionItem(
                         index=1,
                         title="Article 2 Title",
-                        summary="Summary of article 2...",
+                        full_summary="Summary of article 2...",
                         source_url="https://example.com/2",
                     ),
                 ],
@@ -122,7 +122,7 @@ class TestSectionSelection:
                     SectionItem(
                         index=2,
                         title="RAG Article Title",
-                        summary="Summary of RAG article...",
+                        full_summary="Summary of RAG article...",
                         source_url="https://example.com/rag",
                     ),
                 ],
@@ -142,7 +142,7 @@ class TestSectionSelection:
                         SectionItem(
                             index=0,
                             title="Title 1",
-                            summary="Summary...",
+                            full_summary="Summary...",
                             source_url="https://example.com/1",
                         )
                     ],
@@ -150,7 +150,7 @@ class TestSectionSelection:
                         SectionItem(
                             index=1,
                             title="Title 2",
-                            summary="Summary...",
+                            full_summary="Summary...",
                             source_url="https://example.com/2",
                         )
                     ],
@@ -158,7 +158,7 @@ class TestSectionSelection:
                         SectionItem(
                             index=2,
                             title="Title 3",
-                            summary="Summary...",
+                            full_summary="Summary...",
                             source_url="https://example.com/3",
                         )
                     ],
@@ -166,7 +166,7 @@ class TestSectionSelection:
                         SectionItem(
                             index=3,
                             title="Title 4",
-                            summary="Summary...",
+                            full_summary="Summary...",
                             source_url="https://example.com/4",
                         )
                     ],
@@ -185,7 +185,7 @@ class TestSectionSelection:
             SectionItem(
                 index=i,
                 title=f"Title {i}",
-                summary=f"Summary {i}...",
+                full_summary=f"Summary {i}...",
                 source_url=f"https://example.com/{i}",
             )
             for i in range(12)
@@ -282,7 +282,7 @@ class TestSectionCompilerAgent:
                     SectionItem(
                         index=0,
                         title="Building RAG Systems with LangChain",
-                        summary="A comprehensive guide to implementing RAG systems...",
+                        full_summary="A comprehensive guide to implementing RAG systems...",
                         source_url="https://example.com/rag",
                     ),
                 ],
@@ -290,7 +290,7 @@ class TestSectionCompilerAgent:
                     SectionItem(
                         index=2,
                         title="Telecom AI: 5G Network Optimization",
-                        summary="How AI is transforming 5G network management...",
+                        full_summary="How AI is transforming 5G network management...",
                         source_url="https://example.com/telecom",
                     ),
                 ],
@@ -298,7 +298,7 @@ class TestSectionCompilerAgent:
                     SectionItem(
                         index=1,
                         title="OpenAI Releases GPT-5",
-                        summary="OpenAI announces GPT-5 with improved reasoning...",
+                        full_summary="OpenAI announces GPT-5 with improved reasoning...",
                         source_url="https://example.com/gpt5",
                     ),
                 ],

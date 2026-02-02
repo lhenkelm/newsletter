@@ -9,6 +9,7 @@ from newsletter import config
 from newsletter.category import CategoryAgent
 from newsletter.ingest import load_recent_items
 from newsletter.scoring import ScoringAgent
+from newsletter.section_compiler import SectionCompilerAgent
 
 import logfire
 
@@ -138,10 +139,12 @@ async def main() -> None:
         )
         scoring_init_task = tg.create_task(ScoringAgent.from_config(config))
         category_init_task = tg.create_task(CategoryAgent.from_config(config))
+        compiler_init_task = tg.create_task(SectionCompilerAgent.from_config(config))
 
     df = await load_task
     scoring_agent = await scoring_init_task
     category_agent = await category_init_task
+    compiler_agent = await compiler_init_task
 
     # a row index is needed to join results back later
     df = df.with_row_index("index")
@@ -157,6 +160,18 @@ async def main() -> None:
         df_categorized.select("index", "interest_categories", "category_reasoning"),
         on="index",
     )
+
+    # compile newsletter sections from scored and categorized items
+    _LOGGER.info("Compiling newsletter sections...")
+    section_selection = await compiler_agent.compile_sections(df)
+    _LOGGER.info(
+        f"Section compilation complete. Selected categories: {section_selection.selected_categories}"
+    )
+    _LOGGER.info(f"Selection reasoning: {section_selection.selection_reasoning}")
+    for category, items in section_selection.section_items.items():
+        _LOGGER.info(f"Category '{category}': {len(items)} items")
+        for item in items:
+            _LOGGER.debug(f"  - [{item.index}] {item.title}")
 
 
 if __name__ == "__main__":

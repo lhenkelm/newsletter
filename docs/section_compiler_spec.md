@@ -1,7 +1,7 @@
 # Section Compiler Agent
 1. Goal: select final newsletter items from scored and categorized dataset, choosing up to 10 items across up to 3 categories.
 2. Framework: async pydantic-ai Agent('openai:gpt-4o-mini') invoked inside pipeline.
-3. Inputs: augmented DataFrame with columns: title, summary, source_url, industry, company, relevance_score, score_reasoning, interest_categories, category_reasoning.
+3. Inputs: augmented DataFrame with columns: title, full_summary, source_url, industry, company, relevance_score, score_reasoning, interest_categories, category_reasoning.
      - the agent recieves a subset of the dataframe to start with: all items, sorted by relevance_score descending,
         projected to only index, title, relevance_score, and interest_categories columns.
      - the agent also has access to the audience profile text in its instructions. 
@@ -17,15 +17,15 @@
 6. Prompt: given candidate items with scores and categories, select up to 10 items distributed across up to 3 categories that maximize newsletter value for the audience.
 7. Output: mapping of section names to list of item tuples, matching newsletter writer input format.
 8. Schema: wrap response in BaseModel with fields:
-   - section_items: dict[str, list[SectionItem]] — maps category name to list of SectionItem objects with index, title, summary, source_url.
+   - section_items: dict[str, list[SectionItem]] — maps category name to list of SectionItem objects with index, title, full_summary, source_url.
    - selected_categories: list[str] (the 3 or fewer chosen sections).
    - selection_reasoning: str (brief explanation of choices).
 9. Constraints: max 10 items total; max 3 categories; at least 1 item per selected category.
 10. Output format example:
     ```python
     {
-        "AI Engineering": [{"index": 0, "title": "First Article Title", "summary": "Summary of first article...", "source_url": "https://example.com/1"}, ...],
-        "Industry News": [{"index": 1, "title": "Second Article Title", "summary": "Summary of second article...", "source_url": "https://example.com/2"}, ...]
+        "AI Engineering": [{"index": 0, "title": "First Article Title", "full_summary": "Full summary of first article...", "source_url": "https://example.com/1"}, ...],
+        "Industry News": [{"index": 1, "title": "Second Article Title", "full_summary": "Full summary of second article...", "source_url": "https://example.com/2"}, ...]
     }
     ```
 11. Usage: output feeds directly into newsletter writer agent; section_items dict passed as-is to writer.

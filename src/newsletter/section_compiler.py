@@ -21,7 +21,9 @@ class SectionItem(BaseModel):
 
     index: int = Field(..., description="The index of the item in the source DataFrame")
     title: str = Field(..., description="The title of the newsletter item")
-    summary: str = Field(..., description="The summary text for the newsletter item")
+    full_summary: str = Field(
+        ..., description="The full summary text for the newsletter item"
+    )
     source_url: str = Field(..., description="The source URL for the item")
 
 
@@ -30,7 +32,7 @@ class SectionSelection(BaseModel):
 
     section_items: dict[str, list[SectionItem]] = Field(
         ...,
-        description="Maps category name to list of section items with summary and source_url",
+        description="Maps category name to list of section items with full_summary and source_url",
     )
     selected_categories: list[str] = Field(
         ...,
@@ -81,7 +83,7 @@ class ItemDetail(BaseModel):
 
     index: int
     title: str
-    summary: str
+    full_summary: str
     source_url: str
     industry: str
     company: str
@@ -189,7 +191,7 @@ class SectionCompilerAgent:
         """Select final newsletter items from scored and categorized dataset.
 
         Args:
-            df: DataFrame with columns: title, summary, source_url, industry,
+            df: DataFrame with columns: title, full_summary, source_url, industry,
                 company, relevance_score, score_reasoning, interest_categories,
                 category_reasoning. Must have an 'index' column.
 
@@ -201,7 +203,7 @@ class SectionCompilerAgent:
         required_cols = {
             "index",
             "title",
-            "summary",
+            "full_summary",
             "source_url",
             "industry",
             "company",
@@ -253,8 +255,8 @@ Use the available tools to get full details on specific items when needed:
 - get_high_score_items(min_score): Get all items with score >= min_score
 
 Select the best items for the newsletter and return your selection as JSON.
-The section_items should map category names to lists of objects with 'index', 'title', 'summary', and 'source_url' fields.
-Use the full 'summary' text (not short_summary) from item details for the newsletter content."""
+The section_items should map category names to lists of objects with 'index', 'title', 'full_summary', and 'source_url' fields.
+Use the 'full_summary' text (not short_summary) from item details for the newsletter content."""
 
         deps = SectionCompilerDeps(df=df_sorted)
 
@@ -307,7 +309,7 @@ async def get_item_details(
         index: The index of the item to retrieve.
 
     Returns:
-        Full details of the item including summary, source_url, and all metadata.
+        Full details of the item including full_summary, source_url, and all metadata.
     """
     df = ctx.deps.df
     row = df.filter(pl.col("index") == index)
@@ -319,7 +321,7 @@ async def get_item_details(
     return ItemDetail(
         index=row_dict["index"],
         title=row_dict["title"],
-        summary=row_dict["summary"],
+        full_summary=row_dict["full_summary"],
         source_url=row_dict["source_url"],
         industry=row_dict["industry"],
         company=row_dict["company"],
