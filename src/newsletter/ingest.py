@@ -26,6 +26,10 @@ async def load_recent_items(
 
     Returns:
         A Polars DataFrame with items from the last `cutoff_days` days.
+
+    Raises:
+        RuntimeError: If no recent items are found.
+        ValueError: If input parameters are invalid.
     """
     if min_items > max_items:
         raise ValueError(
