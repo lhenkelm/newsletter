@@ -32,4 +32,4 @@
     - Keep summaries concise (1-2 sentences per item); distill `full_summary` down.
     - Maintain a consistent tone matched to the audience profile.
 11. Async flow: `await writer_agent.write_newsletter(section_selection.section_items, profile)` as single call following pydantic-ai Agent patterns.
-12. Usage: save returned newsletter_markdown to `newsletter.md` in project root.
+12. Usage: save returned newsletter_markdown to a configurable local path (default: `newsletter.md` in project root). Path can be set via `OUTPUT_PATH` environment variable.
