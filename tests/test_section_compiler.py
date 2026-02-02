@@ -11,6 +11,7 @@ from newsletter.section_compiler import (
     MAX_CATEGORIES,
     MAX_TOTAL_ITEMS,
     SectionCompilerAgent,
+    SectionItem,
     SectionSelection,
     get_item_details,
     get_items_by_category,
@@ -104,11 +105,20 @@ class TestSectionSelection:
         selection = SectionSelection(
             section_items={
                 "AI Engineering": [
-                    ("Summary of article 1...", "https://example.com/1"),
-                    ("Summary of article 2...", "https://example.com/2"),
+                    SectionItem(
+                        summary="Summary of article 1...",
+                        source_url="https://example.com/1",
+                    ),
+                    SectionItem(
+                        summary="Summary of article 2...",
+                        source_url="https://example.com/2",
+                    ),
                 ],
                 "RAG & Retrieval": [
-                    ("Summary of RAG article...", "https://example.com/rag"),
+                    SectionItem(
+                        summary="Summary of RAG article...",
+                        source_url="https://example.com/rag",
+                    ),
                 ],
             },
             selected_categories=["AI Engineering", "RAG & Retrieval"],
@@ -122,10 +132,26 @@ class TestSectionSelection:
         with pytest.raises(ValueError, match=f"Maximum {MAX_CATEGORIES} categories"):
             SectionSelection(
                 section_items={
-                    "AI Engineering": [("Summary...", "https://example.com/1")],
-                    "RAG & Retrieval": [("Summary...", "https://example.com/2")],
-                    "LLMOps Tools": [("Summary...", "https://example.com/3")],
-                    "Industry News": [("Summary...", "https://example.com/4")],
+                    "AI Engineering": [
+                        SectionItem(
+                            summary="Summary...", source_url="https://example.com/1"
+                        )
+                    ],
+                    "RAG & Retrieval": [
+                        SectionItem(
+                            summary="Summary...", source_url="https://example.com/2"
+                        )
+                    ],
+                    "LLMOps Tools": [
+                        SectionItem(
+                            summary="Summary...", source_url="https://example.com/3"
+                        )
+                    ],
+                    "Industry News": [
+                        SectionItem(
+                            summary="Summary...", source_url="https://example.com/4"
+                        )
+                    ],
                 },
                 selected_categories=[
                     "AI Engineering",
@@ -137,7 +163,12 @@ class TestSectionSelection:
 
     def test_max_items_exceeded(self):
         """Test that more than MAX_TOTAL_ITEMS raises error."""
-        items = [(f"Summary {i}...", f"https://example.com/{i}") for i in range(12)]
+        items = [
+            SectionItem(
+                summary=f"Summary {i}...", source_url=f"https://example.com/{i}"
+            )
+            for i in range(12)
+        ]
         with pytest.raises(ValueError, match=f"Maximum {MAX_TOTAL_ITEMS} total items"):
             SectionSelection(
                 section_items={"AI Engineering": items},
@@ -227,21 +258,21 @@ class TestSectionCompilerAgent:
         mock_result.output = SectionSelection(
             section_items={
                 "RAG & Retrieval": [
-                    (
-                        "A comprehensive guide to implementing RAG systems...",
-                        "https://example.com/rag",
+                    SectionItem(
+                        summary="A comprehensive guide to implementing RAG systems...",
+                        source_url="https://example.com/rag",
                     ),
                 ],
                 "Telecom Innovation": [
-                    (
-                        "How AI is transforming 5G network management...",
-                        "https://example.com/telecom",
+                    SectionItem(
+                        summary="How AI is transforming 5G network management...",
+                        source_url="https://example.com/telecom",
                     ),
                 ],
                 "AI Engineering": [
-                    (
-                        "OpenAI announces GPT-5 with improved reasoning...",
-                        "https://example.com/gpt5",
+                    SectionItem(
+                        summary="OpenAI announces GPT-5 with improved reasoning...",
+                        source_url="https://example.com/gpt5",
                     ),
                 ],
             },

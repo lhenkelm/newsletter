@@ -23,6 +23,8 @@ CATEGORY_MODEL = os.getenv("CATEGORY_MODEL", "openai:gpt-4o-mini")
 
 # Section Compiler Agent Configuration
 COMPILER_MODEL = os.getenv("COMPILER_MODEL", "openai:gpt-4o-mini")
+MAX_TOTAL_ITEMS = int(os.getenv("MAX_TOTAL_ITEMS", "10"))
+MAX_CATEGORIES = int(os.getenv("MAX_CATEGORIES", "3"))
 
 _VALID_LOG_LEVELS = ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL")
 LOGGING_LEVEL = str(os.getenv("LOGGING_LEVEL", "WARNING")).upper()

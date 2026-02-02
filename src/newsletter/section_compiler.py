@@ -11,20 +11,24 @@ from pydantic_ai import Agent, RunContext, Tool
 
 from newsletter.async_disk_cache import AsyncDiskCache
 from newsletter.profile import load_audience_profile
+from newsletter.config import MAX_TOTAL_ITEMS, MAX_CATEGORIES
 
 _LOGGER = getLogger(__name__)
 
-# Maximum constraints for newsletter compilation
-MAX_TOTAL_ITEMS = 10
-MAX_CATEGORIES = 3
+
+class SectionItem(BaseModel):
+    """A single item in a newsletter section."""
+
+    summary: str = Field(..., description="The summary text for the newsletter item")
+    source_url: str = Field(..., description="The source URL for the item")
 
 
 class SectionSelection(BaseModel):
     """Output schema for section compilation."""
 
-    section_items: dict[str, list[tuple[str, str]]] = Field(
+    section_items: dict[str, list[SectionItem]] = Field(
         ...,
-        description="Maps category name to list of (summary, source_url) tuples",
+        description="Maps category name to list of section items with summary and source_url",
     )
     selected_categories: list[str] = Field(
         ...,
@@ -40,8 +44,8 @@ class SectionSelection(BaseModel):
     @field_validator("section_items")
     @classmethod
     def validate_section_items(
-        cls, v: dict[str, list[tuple[str, str]]]
-    ) -> dict[str, list[tuple[str, str]]]:
+        cls, v: dict[str, list[SectionItem]]
+    ) -> dict[str, list[SectionItem]]:
         """Validate section items constraints."""
         if len(v) > MAX_CATEGORIES:
             raise ValueError(
@@ -247,7 +251,7 @@ Use the available tools to get full details on specific items when needed:
 - get_high_score_items(min_score): Get all items with score >= min_score
 
 Select the best items for the newsletter and return your selection as JSON.
-The section_items should map category names to lists of (summary, source_url) tuples.
+The section_items should map category names to lists of objects with 'summary' and 'source_url' fields.
 Use the full 'summary' text (not short_summary) from item details for the newsletter content."""
 
         deps = SectionCompilerDeps(df=df_sorted)
