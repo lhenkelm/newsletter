@@ -240,7 +240,7 @@ class SectionCompilerAgent:
         df_for_key = df.sort("index").select("index", "title", "relevance_score")
         row_hashes = tuple(df_for_key.hash_rows().to_list())
         # Include profile hash to invalidate cache on profile changes
-        return (row_hashes, hash(self.profile))
+        return (row_hashes, self.profile[:300:3])
 
     @instrument()
     async def compile_sections(self, df: pl.DataFrame) -> SectionSelection:
