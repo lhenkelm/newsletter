@@ -17,15 +17,15 @@
 6. Prompt: given candidate items with scores and categories, select up to 10 items distributed across up to 3 categories that maximize newsletter value for the audience.
 7. Output: mapping of section names to list of item tuples, matching newsletter writer input format.
 8. Schema: wrap response in BaseModel with fields:
-   - section_items: dict[str, list[tuple[str, str]]] — maps category name to list of (long_summary, source_url) tuples.
+   - section_items: dict[str, list[SectionItem]] — maps category name to list of SectionItem objects with index, title, summary, source_url.
    - selected_categories: list[str] (the 3 or fewer chosen sections).
    - selection_reasoning: str (brief explanation of choices).
 9. Constraints: max 10 items total; max 3 categories; at least 1 item per selected category.
 10. Output format example:
     ```python
     {
-        "AI Engineering": [("Summary of first article...", "https://example.com/1"), ...],
-        "Industry News": [("Summary of second article...", "https://example.com/2"), ...]
+        "AI Engineering": [{"index": 0, "title": "First Article Title", "summary": "Summary of first article...", "source_url": "https://example.com/1"}, ...],
+        "Industry News": [{"index": 1, "title": "Second Article Title", "summary": "Summary of second article...", "source_url": "https://example.com/2"}, ...]
     }
     ```
 11. Usage: output feeds directly into newsletter writer agent; section_items dict passed as-is to writer.

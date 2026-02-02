@@ -19,6 +19,8 @@ _LOGGER = getLogger(__name__)
 class SectionItem(BaseModel):
     """A single item in a newsletter section."""
 
+    index: int = Field(..., description="The index of the item in the source DataFrame")
+    title: str = Field(..., description="The title of the newsletter item")
     summary: str = Field(..., description="The summary text for the newsletter item")
     source_url: str = Field(..., description="The source URL for the item")
 
@@ -251,7 +253,7 @@ Use the available tools to get full details on specific items when needed:
 - get_high_score_items(min_score): Get all items with score >= min_score
 
 Select the best items for the newsletter and return your selection as JSON.
-The section_items should map category names to lists of objects with 'summary' and 'source_url' fields.
+The section_items should map category names to lists of objects with 'index', 'title', 'summary', and 'source_url' fields.
 Use the full 'summary' text (not short_summary) from item details for the newsletter content."""
 
         deps = SectionCompilerDeps(df=df_sorted)

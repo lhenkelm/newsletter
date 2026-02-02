@@ -106,16 +106,22 @@ class TestSectionSelection:
             section_items={
                 "AI Engineering": [
                     SectionItem(
+                        index=0,
+                        title="Article 1 Title",
                         summary="Summary of article 1...",
                         source_url="https://example.com/1",
                     ),
                     SectionItem(
+                        index=1,
+                        title="Article 2 Title",
                         summary="Summary of article 2...",
                         source_url="https://example.com/2",
                     ),
                 ],
                 "RAG & Retrieval": [
                     SectionItem(
+                        index=2,
+                        title="RAG Article Title",
                         summary="Summary of RAG article...",
                         source_url="https://example.com/rag",
                     ),
@@ -134,22 +140,34 @@ class TestSectionSelection:
                 section_items={
                     "AI Engineering": [
                         SectionItem(
-                            summary="Summary...", source_url="https://example.com/1"
+                            index=0,
+                            title="Title 1",
+                            summary="Summary...",
+                            source_url="https://example.com/1",
                         )
                     ],
                     "RAG & Retrieval": [
                         SectionItem(
-                            summary="Summary...", source_url="https://example.com/2"
+                            index=1,
+                            title="Title 2",
+                            summary="Summary...",
+                            source_url="https://example.com/2",
                         )
                     ],
                     "LLMOps Tools": [
                         SectionItem(
-                            summary="Summary...", source_url="https://example.com/3"
+                            index=2,
+                            title="Title 3",
+                            summary="Summary...",
+                            source_url="https://example.com/3",
                         )
                     ],
                     "Industry News": [
                         SectionItem(
-                            summary="Summary...", source_url="https://example.com/4"
+                            index=3,
+                            title="Title 4",
+                            summary="Summary...",
+                            source_url="https://example.com/4",
                         )
                     ],
                 },
@@ -165,7 +183,10 @@ class TestSectionSelection:
         """Test that more than MAX_TOTAL_ITEMS raises error."""
         items = [
             SectionItem(
-                summary=f"Summary {i}...", source_url=f"https://example.com/{i}"
+                index=i,
+                title=f"Title {i}",
+                summary=f"Summary {i}...",
+                source_url=f"https://example.com/{i}",
             )
             for i in range(12)
         ]
@@ -259,18 +280,24 @@ class TestSectionCompilerAgent:
             section_items={
                 "RAG & Retrieval": [
                     SectionItem(
+                        index=0,
+                        title="Building RAG Systems with LangChain",
                         summary="A comprehensive guide to implementing RAG systems...",
                         source_url="https://example.com/rag",
                     ),
                 ],
                 "Telecom Innovation": [
                     SectionItem(
+                        index=2,
+                        title="Telecom AI: 5G Network Optimization",
                         summary="How AI is transforming 5G network management...",
                         source_url="https://example.com/telecom",
                     ),
                 ],
                 "AI Engineering": [
                     SectionItem(
+                        index=1,
+                        title="OpenAI Releases GPT-5",
                         summary="OpenAI announces GPT-5 with improved reasoning...",
                         source_url="https://example.com/gpt5",
                     ),
