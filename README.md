@@ -10,6 +10,10 @@ clone the repository and install the required packages. If you don't have `uv` i
 uv sync
 ```
 
+### Logfire Setup
+
+This project uses Logfire for logging and observability. To set up Logfire with a free personal account, follow the instructions at [Logfire's Getting Started Guide](https://logfire.pydantic.dev/docs/#logfire).
+
 ## Configuration
 
 Copy `.env.example` to `.env` and customize as needed:
