@@ -51,5 +51,8 @@ async def load_recent_items(
     elif row_count > max_items:
         _LOGGER.warning(f"{row_count} items found (maximum expected: {max_items})")
 
+    if row_count <= 0:
+        raise RuntimeError("No recent items found, aborting")
+
     _LOGGER.info(f"Loaded {len(df)} recent items")
     return df
