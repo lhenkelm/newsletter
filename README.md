@@ -38,3 +38,6 @@ uv run python -m newsletter.main
 uv run -- pytest
 ```
 
+## Ideas for Improvement
+
+ - Option to disable logfire/make it an optional feature and dependency
