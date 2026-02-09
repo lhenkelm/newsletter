@@ -10,6 +10,7 @@ from newsletter.category import CategoryAgent
 from newsletter.ingest import load_recent_items
 from newsletter.scoring import ScoringAgent
 from newsletter.section_compiler import SectionCompilerAgent
+from newsletter.writer import NewsletterWriterAgent, save_newsletter
 
 import logfire
 
@@ -140,11 +141,13 @@ async def main() -> None:
         scoring_init_task = tg.create_task(ScoringAgent.from_config(config))
         category_init_task = tg.create_task(CategoryAgent.from_config(config))
         compiler_init_task = tg.create_task(SectionCompilerAgent.from_config(config))
+        writer_init_task = tg.create_task(NewsletterWriterAgent.from_config(config))
 
     df = await load_task
     scoring_agent = await scoring_init_task
     category_agent = await category_init_task
     compiler_agent = await compiler_init_task
+    writer_agent = await writer_init_task
 
     # a row index is needed to join results back later
     df = df.with_row_index("index")
@@ -172,6 +175,16 @@ async def main() -> None:
         _LOGGER.info(f"Category '{category}': {len(items)} items")
         for item in items:
             _LOGGER.debug(f"  - [{item.index}] {item.title}")
+
+    # generate and save the newsletter
+    _LOGGER.info("Generating newsletter...")
+    newsletter_output = await writer_agent.write_newsletter(
+        section_selection.section_items
+    )
+    _LOGGER.info(f"Newsletter generated: {newsletter_output.title}")
+
+    output_path = await save_newsletter(newsletter_output)
+    _LOGGER.info(f"Newsletter saved to {output_path}")
 
 
 if __name__ == "__main__":
