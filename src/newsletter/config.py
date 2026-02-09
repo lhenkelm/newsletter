@@ -26,6 +26,10 @@ COMPILER_MODEL = os.getenv("COMPILER_MODEL", "openai:gpt-4o-mini")
 MAX_TOTAL_ITEMS = int(os.getenv("MAX_TOTAL_ITEMS", "10"))
 MAX_CATEGORIES = int(os.getenv("MAX_CATEGORIES", "3"))
 
+# Newsletter Writer Agent Configuration
+WRITER_MODEL = os.getenv("WRITER_MODEL", "openai:gpt-4o-mini")
+OUTPUT_PATH = os.getenv("OUTPUT_PATH", "newsletter.md")
+
 _VALID_LOG_LEVELS = ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL")
 LOGGING_LEVEL = str(os.getenv("LOGGING_LEVEL", "WARNING")).upper()
 if LOGGING_LEVEL not in _VALID_LOG_LEVELS:
