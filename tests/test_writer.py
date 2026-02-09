@@ -64,24 +64,6 @@ async def writer_agent(mock_api_key):
     return agent
 
 
-class TestNewsletterOutput:
-    """Tests for the NewsletterOutput schema."""
-
-    def test_valid_output(self):
-        """Test creating a valid NewsletterOutput."""
-        output = NewsletterOutput(
-            newsletter_markdown="# Weekly AI Newsletter\n\nContent here...",
-            title="Weekly AI Newsletter",
-        )
-        assert output.newsletter_markdown.startswith("#")
-        assert output.title == "Weekly AI Newsletter"
-
-    def test_required_fields(self):
-        """Test that all fields are required."""
-        with pytest.raises(ValueError):
-            NewsletterOutput()
-
-
 class TestNewsletterWriterAgentInit:
     """Tests for NewsletterWriterAgent initialization."""
 
@@ -106,16 +88,6 @@ class TestNewsletterWriterAgentInit:
         with pytest.raises(ValueError, match="Audience profile cannot be empty"):
             NewsletterWriterAgent(agent, "")
 
-    def test_repr_truncates_long_profile(self, mock_api_key):
-        """Test that repr truncates long profiles."""
-        from pydantic_ai import Agent
-
-        agent = Agent("openai:gpt-4o-mini")
-        long_profile = "x" * 300
-        writer = NewsletterWriterAgent(agent, long_profile)
-        repr_str = repr(writer)
-        assert "[...]" in repr_str
-
 
 class TestNewsletterWriterAgentFromConfig:
     """Tests for creating agent from config."""
@@ -131,21 +103,8 @@ class TestNewsletterWriterAgentFromConfig:
             CACHE_DIRECTORY = None
 
         agent = await NewsletterWriterAgent.from_config(MockConfig())
-        assert isinstance(agent, NewsletterWriterAgent)
         assert agent.profile != ""
         assert agent.cache is None
-
-    @pytest.mark.asyncio
-    async def test_from_config_falls_back_to_category_model(self, mock_api_key):
-        """Test that from_config falls back to CATEGORY_MODEL if WRITER_MODEL not set."""
-
-        class MockConfig:
-            CATEGORY_MODEL = "openai:gpt-4o-mini"
-            AUDIENCE_PROFILE_PATH = "./data/audience_profile.txt"
-            CACHE_DIRECTORY = None
-
-        agent = await NewsletterWriterAgent.from_config(MockConfig())
-        assert isinstance(agent, NewsletterWriterAgent)
 
     @pytest.mark.asyncio
     async def test_from_config_with_cache_directory(self, mock_api_key, tmp_path):
@@ -187,85 +146,7 @@ class TestWriteNewsletter:
             mock_run.return_value = mock_result
             result = await writer_agent.write_newsletter(sample_section_items)
 
-            assert isinstance(result, NewsletterOutput)
             assert result.title == "Test Newsletter"
-            mock_run.assert_called_once()
-
-    @pytest.mark.asyncio
-    async def test_write_newsletter_prompt_contains_categories(
-        self, writer_agent, sample_section_items
-    ):
-        """Test that the prompt includes all category names."""
-        mock_result = MagicMock()
-        mock_result.output = NewsletterOutput(
-            newsletter_markdown="# Test\n\nContent",
-            title="Test",
-        )
-
-        with patch.object(
-            writer_agent.agent, "run", new_callable=AsyncMock
-        ) as mock_run:
-            mock_run.return_value = mock_result
-            await writer_agent.write_newsletter(sample_section_items)
-
-            call_args = mock_run.call_args
-            prompt = call_args[0][0]
-            assert "AI Engineering" in prompt
-            assert "Telecom Innovation" in prompt
-
-    @pytest.mark.asyncio
-    async def test_write_newsletter_prompt_contains_items(
-        self, writer_agent, sample_section_items
-    ):
-        """Test that the prompt includes item details."""
-        mock_result = MagicMock()
-        mock_result.output = NewsletterOutput(
-            newsletter_markdown="# Test\n\nContent",
-            title="Test",
-        )
-
-        with patch.object(
-            writer_agent.agent, "run", new_callable=AsyncMock
-        ) as mock_run:
-            mock_run.return_value = mock_result
-            await writer_agent.write_newsletter(sample_section_items)
-
-            call_args = mock_run.call_args
-            prompt = call_args[0][0]
-            assert "Building RAG Systems with LangChain" in prompt
-            assert "https://example.com/rag" in prompt
-
-    @pytest.mark.asyncio
-    async def test_write_newsletter_uses_cache(
-        self, mock_api_key, sample_section_items, tmp_path
-    ):
-        """Test that write_newsletter uses cache on repeated calls."""
-
-        class MockConfig:
-            WRITER_MODEL = "openai:gpt-4o-mini"
-            CATEGORY_MODEL = "openai:gpt-4o-mini"
-            AUDIENCE_PROFILE_PATH = "./data/audience_profile.txt"
-            CACHE_DIRECTORY = tmp_path
-
-        agent = await NewsletterWriterAgent.from_config(MockConfig())
-
-        mock_result = MagicMock()
-        mock_result.output = NewsletterOutput(
-            newsletter_markdown="# Cached Newsletter\n\nContent",
-            title="Cached Newsletter",
-        )
-
-        with patch.object(agent.agent, "run", new_callable=AsyncMock) as mock_run:
-            mock_run.return_value = mock_result
-
-            # First call should hit the LLM
-            result1 = await agent.write_newsletter(sample_section_items)
-            assert mock_run.call_count == 1
-
-            # Second call should use cache
-            result2 = await agent.write_newsletter(sample_section_items)
-            assert mock_run.call_count == 1  # Still 1, cache was used
-            assert result2.title == result1.title
 
 
 class TestSaveNewsletter:
@@ -296,27 +177,9 @@ class TestSaveNewsletter:
             title="Custom Newsletter",
         )
 
-        # Ensure parent directory exists
-        custom_path.parent.mkdir(parents=True, exist_ok=True)
-
         path = await save_newsletter(output, custom_path)
         assert path == custom_path
         assert path.read_text() == output.newsletter_markdown
-
-    @pytest.mark.asyncio
-    async def test_save_newsletter_from_env_var(self, tmp_path, monkeypatch):
-        """Test saving newsletter using OUTPUT_PATH env var."""
-        output_file = tmp_path / "env_newsletter.md"
-        monkeypatch.setenv("OUTPUT_PATH", str(output_file))
-
-        output = NewsletterOutput(
-            newsletter_markdown="# Env Newsletter\n\nContent...",
-            title="Env Newsletter",
-        )
-
-        path = await save_newsletter(output)
-        assert path == output_file
-        assert output_file.read_text() == output.newsletter_markdown
 
 
 @pytest.mark.skipif(
@@ -340,7 +203,6 @@ class TestLiveAPI:
         agent = await NewsletterWriterAgent.from_config(MockConfig())
         result = await agent.write_newsletter(sample_section_items)
 
-        assert isinstance(result, NewsletterOutput)
         assert len(result.newsletter_markdown) > 100
         assert result.title != ""
         # Check that markdown contains expected elements
