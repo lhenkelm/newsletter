@@ -10,7 +10,6 @@ import pytest_asyncio
 from newsletter.section_compiler import SectionItem
 from newsletter.writer import (
     LinkValidationError,
-    MAX_LINK_VALIDATION_RETRIES,
     NewsletterOutput,
     NewsletterWriterAgent,
     extract_urls_from_markdown,
@@ -64,6 +63,7 @@ async def writer_agent(mock_api_key):
         AUDIENCE_PROFILE_PATH = "./data/audience_profile.txt"
         CACHE_DIRECTORY = None
         CUTOFF_DAYS = 7
+        MAX_LINK_VALIDATION_RETRIES = 3
 
     agent = await NewsletterWriterAgent.from_config(MockConfig())
     return agent
@@ -75,7 +75,7 @@ class TestNewsletterWriterAgentInit:
     def test_init_requires_agent_instance(self):
         """Test that init requires a proper Agent instance."""
         with pytest.raises(TypeError, match="expected 'agent' to be an instance"):
-            NewsletterWriterAgent("not-an-agent", "profile", 7)
+            NewsletterWriterAgent("not-an-agent", "profile", 7, 3)
 
     def test_init_requires_string_profile(self, mock_api_key):
         """Test that init requires a string profile."""
@@ -83,7 +83,7 @@ class TestNewsletterWriterAgentInit:
 
         agent = Agent("openai:gpt-4o-mini")
         with pytest.raises(TypeError, match="expected 'profile' to be of type 'str'"):
-            NewsletterWriterAgent(agent, 123, 7)
+            NewsletterWriterAgent(agent, 123, 7, 3)
 
     def test_init_requires_non_empty_profile(self, mock_api_key):
         """Test that init requires a non-empty profile."""
@@ -91,7 +91,7 @@ class TestNewsletterWriterAgentInit:
 
         agent = Agent("openai:gpt-4o-mini")
         with pytest.raises(ValueError, match="Audience profile cannot be empty"):
-            NewsletterWriterAgent(agent, "", 7)
+            NewsletterWriterAgent(agent, "", 7, 3)
 
 
 class TestNewsletterWriterAgentFromConfig:
@@ -107,6 +107,7 @@ class TestNewsletterWriterAgentFromConfig:
             AUDIENCE_PROFILE_PATH = "./data/audience_profile.txt"
             CACHE_DIRECTORY = None
             CUTOFF_DAYS = 7
+            MAX_LINK_VALIDATION_RETRIES = 3
 
         agent = await NewsletterWriterAgent.from_config(MockConfig())
         assert agent.profile != ""
@@ -122,6 +123,7 @@ class TestNewsletterWriterAgentFromConfig:
             AUDIENCE_PROFILE_PATH = "./data/audience_profile.txt"
             CACHE_DIRECTORY = tmp_path
             CUTOFF_DAYS = 7
+            MAX_LINK_VALIDATION_RETRIES = 3
 
         agent = await NewsletterWriterAgent.from_config(MockConfig())
         assert agent.cache is not None
@@ -217,6 +219,7 @@ class TestLiveAPI:
             AUDIENCE_PROFILE_PATH = "./data/audience_profile.txt"
             CACHE_DIRECTORY = None
             CUTOFF_DAYS = 7
+            MAX_LINK_VALIDATION_RETRIES = 3
 
         agent = await NewsletterWriterAgent.from_config(MockConfig())
         result = await agent.write_newsletter(sample_section_items)
@@ -445,8 +448,8 @@ class TestWriteNewsletterLinkValidation:
             with pytest.raises(LinkValidationError) as exc_info:
                 await writer_agent.write_newsletter(sample_section_items)
 
-            # Should have tried max times
-            assert mock_run.call_count == MAX_LINK_VALIDATION_RETRIES
+            # Should have tried max times (default is 3)
+            assert mock_run.call_count == 3
             # Error should contain info about missing links
             assert len(exc_info.value.missing_links) > 0
 

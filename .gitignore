@@ -13,3 +13,4 @@ wheels/
 # disk cache
 .cache
 newsletter.md
+.vscode/settings.json

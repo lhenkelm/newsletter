@@ -20,9 +20,6 @@ _LOGGER = getLogger(__name__)
 # Regex pattern to extract URLs from Markdown links: [text](url)
 _MARKDOWN_LINK_PATTERN = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
 
-# Maximum number of retries for link validation
-MAX_LINK_VALIDATION_RETRIES = 3
-
 
 class LinkValidationError(Exception):
     """Raised when generated newsletter contains invalid links."""
@@ -102,6 +99,7 @@ class NewsletterWriterAgent:
         agent: Agent,
         profile: str,
         cutoff_days: int,
+        max_link_validation_retries: int,
         cache: AsyncDiskCache | None = None,
     ):
         """Initialize the newsletter writer agent."""
@@ -120,6 +118,7 @@ class NewsletterWriterAgent:
             raise ValueError(f"Audience profile cannot be empty, got {profile!r}")
         self.profile = profile
         self.cutoff_days = cutoff_days
+        self.max_link_validation_retries = max_link_validation_retries
         self.cache = cache
         _LOGGER.debug(f"initialized {self!r}")
 
@@ -133,6 +132,7 @@ class NewsletterWriterAgent:
             f"agent={self.agent!r}, "
             f"profile={profile!r}, "
             f"cutoff_days={self.cutoff_days!r}, "
+            f"max_link_validation_retries={self.max_link_validation_retries!r}, "
             f"cache={self.cache!r})"
         )
 
@@ -143,9 +143,10 @@ class NewsletterWriterAgent:
 
         Args:
             config: Configuration module with attributes
-                WRITER_MODEL and
-                AUDIENCE_PROFILE_PATH and
-                CACHE_DIRECTORY.
+                WRITER_MODEL,
+                AUDIENCE_PROFILE_PATH,
+                CACHE_DIRECTORY, and
+                MAX_LINK_VALIDATION_RETRIES.
         """
         model = config.WRITER_MODEL
 
@@ -167,7 +168,13 @@ class NewsletterWriterAgent:
         if config.CACHE_DIRECTORY:
             cache = await init_cache_task
 
-        return cls(agent, profile, config.CUTOFF_DAYS, cache)
+        return cls(
+            agent,
+            profile,
+            config.CUTOFF_DAYS,
+            config.MAX_LINK_VALIDATION_RETRIES,
+            cache,
+        )
 
     def _build_cache_key(self, section_items: dict[str, list[SectionItem]]) -> tuple:
         """Build a hashable cache key from section items."""
@@ -269,7 +276,7 @@ Generate the complete newsletter now:"""
 
         last_error: LinkValidationError | None = None
 
-        for attempt in range(MAX_LINK_VALIDATION_RETRIES):
+        for attempt in range(self.max_link_validation_retries):
             if attempt == 0:
                 prompt = base_prompt
             else:
@@ -278,7 +285,7 @@ Generate the complete newsletter now:"""
                 error_feedback = self._build_link_error_feedback(last_error)
                 prompt = f"{base_prompt}\n\n## IMPORTANT - Previous Attempt Failed\n{error_feedback}"
                 _LOGGER.warning(
-                    f"Retrying newsletter generation (attempt {attempt + 1}/{MAX_LINK_VALIDATION_RETRIES}) "
+                    f"Retrying newsletter generation (attempt {attempt + 1}/{self.max_link_validation_retries}) "
                     f"due to link validation failure"
                 )
 
