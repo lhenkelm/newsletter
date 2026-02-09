@@ -1,6 +1,7 @@
 """Newsletter writer agent for generating polished Markdown newsletters."""
 
 import asyncio
+import re
 from datetime import date, timedelta
 from logging import getLogger
 from pathlib import Path
@@ -15,6 +16,59 @@ from newsletter.profile import load_audience_profile
 from newsletter.section_compiler import SectionItem
 
 _LOGGER = getLogger(__name__)
+
+# Regex pattern to extract URLs from Markdown links: [text](url)
+_MARKDOWN_LINK_PATTERN = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
+
+# Maximum number of retries for link validation
+MAX_LINK_VALIDATION_RETRIES = 3
+
+
+class LinkValidationError(Exception):
+    """Raised when generated newsletter contains invalid links."""
+
+    def __init__(
+        self,
+        message: str,
+        missing_links: set[str] | None = None,
+        extra_links: set[str] | None = None,
+    ):
+        super().__init__(message)
+        self.missing_links = missing_links or set()
+        self.extra_links = extra_links or set()
+
+
+def extract_urls_from_markdown(markdown: str) -> set[str]:
+    """Extract all URLs from Markdown link syntax.
+
+    Args:
+        markdown: The Markdown text to extract URLs from.
+
+    Returns:
+        Set of unique URLs found in the markdown.
+    """
+    matches = _MARKDOWN_LINK_PATTERN.findall(markdown)
+    return {url.strip() for _, url in matches}
+
+
+def validate_newsletter_links(
+    markdown: str, expected_urls: set[str]
+) -> tuple[set[str], set[str]]:
+    """Validate that newsletter markdown contains exactly the expected links.
+
+    Args:
+        markdown: The generated newsletter Markdown.
+        expected_urls: Set of URLs that should appear in the newsletter.
+
+    Returns:
+        Tuple of (missing_urls, extra_urls). Both empty if valid.
+    """
+    found_urls = extract_urls_from_markdown(markdown)
+
+    missing_urls = expected_urls - found_urls
+    extra_urls = found_urls - expected_urls
+
+    return missing_urls, extra_urls
 
 
 class NewsletterOutput(BaseModel):
@@ -138,6 +192,11 @@ class NewsletterWriterAgent:
                 lines.append(f"Summary: {item.full_summary}")
         return "\n".join(lines)
 
+    @staticmethod
+    def _extract_expected_urls(section_items: dict[str, list[SectionItem]]) -> set[str]:
+        """Extract all expected URLs from section items."""
+        return {item.source_url for items in section_items.values() for item in items}
+
     @instrument()
     async def write_newsletter(
         self,
@@ -150,6 +209,10 @@ class NewsletterWriterAgent:
 
         Returns:
             NewsletterOutput with full Markdown content and title.
+
+        Raises:
+            ValueError: If section_items is empty.
+            LinkValidationError: If link validation fails after max retries.
         """
         if not section_items:
             raise ValueError("section_items cannot be empty")
@@ -165,12 +228,15 @@ class NewsletterWriterAgent:
         formatted_items = self._format_section_items_for_prompt(section_items)
         categories = list(section_items.keys())
 
+        # Extract expected URLs for validation
+        expected_urls = self._extract_expected_urls(section_items)
+
         # Compute date range from cutoff_days
         end_date = date.today()
         start_date = end_date - timedelta(days=self.cutoff_days)
         date_info = f"\n\n## Coverage Period\nThis newsletter covers content from {start_date.isoformat()} to {end_date.isoformat()}.\n"
 
-        prompt = f"""You are a professional newsletter writer. Generate a polished newsletter in Markdown format.
+        base_prompt = f"""You are a professional newsletter writer. Generate a polished newsletter in Markdown format.
 
 ## Audience Profile
 {self.profile}{date_info}
@@ -201,15 +267,72 @@ Write a complete newsletter with the following structure:
 
 Generate the complete newsletter now:"""
 
-        result = await self.agent.run(prompt, output_type=NewsletterOutput)
-        output = result.output
+        last_error: LinkValidationError | None = None
 
-        # Cache result
+        for attempt in range(MAX_LINK_VALIDATION_RETRIES):
+            if attempt == 0:
+                prompt = base_prompt
+            else:
+                # Build retry prompt with specific feedback
+                assert last_error is not None  # Set in previous iteration
+                error_feedback = self._build_link_error_feedback(last_error)
+                prompt = f"{base_prompt}\n\n## IMPORTANT - Previous Attempt Failed\n{error_feedback}"
+                _LOGGER.warning(
+                    f"Retrying newsletter generation (attempt {attempt + 1}/{MAX_LINK_VALIDATION_RETRIES}) "
+                    f"due to link validation failure"
+                )
+
+            result = await self.agent.run(prompt, output_type=NewsletterOutput)
+            output = result.output
+
+            # Validate links
+            missing_urls, extra_urls = validate_newsletter_links(
+                output.newsletter_markdown, expected_urls
+            )
+
+            if not missing_urls and not extra_urls:
+                # Validation passed
+                _LOGGER.debug("Link validation passed")
+                break
+
+            # Build error for retry or final exception
+            error_parts = []
+            if missing_urls:
+                error_parts.append(f"Missing links: {missing_urls}")
+            if extra_urls:
+                error_parts.append(f"Unexpected/hallucinated links: {extra_urls}")
+
+            last_error = LinkValidationError(
+                f"Link validation failed: {'; '.join(error_parts)}",
+                missing_links=missing_urls,
+                extra_links=extra_urls,
+            )
+            _LOGGER.warning(str(last_error))
+        else:
+            # All retries exhausted
+            raise last_error  # type: ignore[misc]
+
+        # Cache result (only cache validated results)
         if self.cache is not None:
             await self.cache.set_item(cache_key, output)
 
         _LOGGER.info(f"Generated newsletter: {output.title}")
         return output
+
+    def _build_link_error_feedback(self, error: LinkValidationError) -> str:
+        """Build feedback message for retry prompt based on link validation error."""
+        feedback_parts = []
+        if error.missing_links:
+            links_list = "\n".join(f"  - {url}" for url in error.missing_links)
+            feedback_parts.append(
+                f"The following source URLs were NOT included but MUST be:\n{links_list}"
+            )
+        if error.extra_links:
+            links_list = "\n".join(f"  - {url}" for url in error.extra_links)
+            feedback_parts.append(
+                f"The following URLs were used but are NOT from the provided items (remove them):\n{links_list}"
+            )
+        return "\n\n".join(feedback_parts)
 
 
 async def save_newsletter(
