@@ -1,6 +1,7 @@
 """Newsletter writer agent for generating polished Markdown newsletters."""
 
 import asyncio
+from datetime import date, timedelta
 from logging import getLogger
 from pathlib import Path
 from typing import Any, Self, Type
@@ -42,7 +43,13 @@ class NewsletterWriterAgent:
         result = await agent.write_newsletter(section_items)
     """
 
-    def __init__(self, agent: Agent, profile: str, cache: AsyncDiskCache | None = None):
+    def __init__(
+        self,
+        agent: Agent,
+        profile: str,
+        cutoff_days: int,
+        cache: AsyncDiskCache | None = None,
+    ):
         """Initialize the newsletter writer agent."""
         if not isinstance(agent, Agent):
             raise TypeError(
@@ -58,6 +65,7 @@ class NewsletterWriterAgent:
         if not profile:
             raise ValueError(f"Audience profile cannot be empty, got {profile!r}")
         self.profile = profile
+        self.cutoff_days = cutoff_days
         self.cache = cache
         _LOGGER.debug(f"initialized {self!r}")
 
@@ -70,6 +78,7 @@ class NewsletterWriterAgent:
             f"{self.__class__.__qualname__}("
             f"agent={self.agent!r}, "
             f"profile={profile!r}, "
+            f"cutoff_days={self.cutoff_days!r}, "
             f"cache={self.cache!r})"
         )
 
@@ -104,7 +113,7 @@ class NewsletterWriterAgent:
         if config.CACHE_DIRECTORY:
             cache = await init_cache_task
 
-        return cls(agent, profile, cache)
+        return cls(agent, profile, config.CUTOFF_DAYS, cache)
 
     def _build_cache_key(self, section_items: dict[str, list[SectionItem]]) -> tuple:
         """Build a hashable cache key from section items."""
@@ -131,7 +140,8 @@ class NewsletterWriterAgent:
 
     @instrument()
     async def write_newsletter(
-        self, section_items: dict[str, list[SectionItem]]
+        self,
+        section_items: dict[str, list[SectionItem]],
     ) -> NewsletterOutput:
         """Generate a polished Markdown newsletter from section items.
 
@@ -155,10 +165,15 @@ class NewsletterWriterAgent:
         formatted_items = self._format_section_items_for_prompt(section_items)
         categories = list(section_items.keys())
 
+        # Compute date range from cutoff_days
+        end_date = date.today()
+        start_date = end_date - timedelta(days=self.cutoff_days)
+        date_info = f"\n\n## Coverage Period\nThis newsletter covers content from {start_date.isoformat()} to {end_date.isoformat()}.\n"
+
         prompt = f"""You are a professional newsletter writer. Generate a polished weekly newsletter in Markdown format.
 
 ## Audience Profile
-{self.profile}
+{self.profile}{date_info}
 
 ## Available Section Items
 {formatted_items}
@@ -173,7 +188,7 @@ Write a complete newsletter with the following structure:
 3. **Categorized Sections**: Create one H2 section (## Category Name) for each of these categories: {", ".join(categories)}
    - Start each section with a brief intro sentence
    - Include a bulleted list of items
-   - For each item, write a concise 1-2 sentence summary that distills the key insight
+   - For each item, write a concise 1-2 sentence summary that distils the key insight
    - Include an inline Markdown link using the item's title and source URL: [Title](URL)
 
 4. **Closing**: Write a short wrap-up (2-3 sentences) with a forward-looking note or call-to-action.

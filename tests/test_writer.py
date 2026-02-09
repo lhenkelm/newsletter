@@ -59,6 +59,7 @@ async def writer_agent(mock_api_key):
         CATEGORY_MODEL = "openai:gpt-4o-mini"
         AUDIENCE_PROFILE_PATH = "./data/audience_profile.txt"
         CACHE_DIRECTORY = None
+        CUTOFF_DAYS = 7
 
     agent = await NewsletterWriterAgent.from_config(MockConfig())
     return agent
@@ -70,7 +71,7 @@ class TestNewsletterWriterAgentInit:
     def test_init_requires_agent_instance(self):
         """Test that init requires a proper Agent instance."""
         with pytest.raises(TypeError, match="expected 'agent' to be an instance"):
-            NewsletterWriterAgent("not-an-agent", "profile")
+            NewsletterWriterAgent("not-an-agent", "profile", 7)
 
     def test_init_requires_string_profile(self, mock_api_key):
         """Test that init requires a string profile."""
@@ -78,7 +79,7 @@ class TestNewsletterWriterAgentInit:
 
         agent = Agent("openai:gpt-4o-mini")
         with pytest.raises(TypeError, match="expected 'profile' to be of type 'str'"):
-            NewsletterWriterAgent(agent, 123)
+            NewsletterWriterAgent(agent, 123, 7)
 
     def test_init_requires_non_empty_profile(self, mock_api_key):
         """Test that init requires a non-empty profile."""
@@ -86,7 +87,7 @@ class TestNewsletterWriterAgentInit:
 
         agent = Agent("openai:gpt-4o-mini")
         with pytest.raises(ValueError, match="Audience profile cannot be empty"):
-            NewsletterWriterAgent(agent, "")
+            NewsletterWriterAgent(agent, "", 7)
 
 
 class TestNewsletterWriterAgentFromConfig:
@@ -101,6 +102,7 @@ class TestNewsletterWriterAgentFromConfig:
             CATEGORY_MODEL = "openai:gpt-4o-mini"
             AUDIENCE_PROFILE_PATH = "./data/audience_profile.txt"
             CACHE_DIRECTORY = None
+            CUTOFF_DAYS = 7
 
         agent = await NewsletterWriterAgent.from_config(MockConfig())
         assert agent.profile != ""
@@ -115,6 +117,7 @@ class TestNewsletterWriterAgentFromConfig:
             CATEGORY_MODEL = "openai:gpt-4o-mini"
             AUDIENCE_PROFILE_PATH = "./data/audience_profile.txt"
             CACHE_DIRECTORY = tmp_path
+            CUTOFF_DAYS = 7
 
         agent = await NewsletterWriterAgent.from_config(MockConfig())
         assert agent.cache is not None
@@ -199,6 +202,7 @@ class TestLiveAPI:
             CATEGORY_MODEL = "openai:gpt-4o-mini"
             AUDIENCE_PROFILE_PATH = "./data/audience_profile.txt"
             CACHE_DIRECTORY = None
+            CUTOFF_DAYS = 7
 
         agent = await NewsletterWriterAgent.from_config(MockConfig())
         result = await agent.write_newsletter(sample_section_items)
