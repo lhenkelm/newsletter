@@ -170,7 +170,7 @@ class NewsletterWriterAgent:
         start_date = end_date - timedelta(days=self.cutoff_days)
         date_info = f"\n\n## Coverage Period\nThis newsletter covers content from {start_date.isoformat()} to {end_date.isoformat()}.\n"
 
-        prompt = f"""You are a professional newsletter writer. Generate a polished weekly newsletter in Markdown format.
+        prompt = f"""You are a professional newsletter writer. Generate a polished newsletter in Markdown format.
 
 ## Audience Profile
 {self.profile}{date_info}
@@ -181,9 +181,9 @@ class NewsletterWriterAgent:
 ## Instructions
 Write a complete newsletter with the following structure:
 
-1. **Title**: Create a catchy weekly newsletter header. Use a level-1 heading (# Title).
+1. **Title**: Create a catchy newsletter header. Use a level-1 heading (# Title).
 
-2. **Introduction**: Write a short engaging paragraph (2-3 sentences) teasing the key themes from this week's content.
+2. **Introduction**: Write a short engaging paragraph (2-3 sentences) teasing the key themes.
 
 3. **Categorized Sections**: Create one H2 section (## Category Name) for each of these categories: {", ".join(categories)}
    - Start each section with a brief intro sentence
