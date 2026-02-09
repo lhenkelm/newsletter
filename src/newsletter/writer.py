@@ -80,12 +80,11 @@ class NewsletterWriterAgent:
 
         Args:
             config: Configuration module with attributes
-                WRITER_MODEL (defaults to CATEGORY_MODEL) and
+                WRITER_MODEL and
                 AUDIENCE_PROFILE_PATH and
                 CACHE_DIRECTORY.
         """
-        # Use WRITER_MODEL if available, otherwise fall back to CATEGORY_MODEL
-        model = getattr(config, "WRITER_MODEL", None) or config.CATEGORY_MODEL
+        model = config.WRITER_MODEL
 
         agent = Agent(model, name=cls.__qualname__)
 
