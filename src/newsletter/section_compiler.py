@@ -197,9 +197,8 @@ class SectionCompilerAgent:
                 AUDIENCE_PROFILE_PATH and
                 CACHE_DIRECTORY.
         """
-        # Use COMPILER_MODEL if available, otherwise fall back to CATEGORY_MODEL
-        model = getattr(config, "COMPILER_MODEL", None) or config.CATEGORY_MODEL
 
+        model = config.COMPILER_MODEL
         # Create agent with tools
         agent = Agent(
             model,
