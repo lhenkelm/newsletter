@@ -216,8 +216,13 @@ async def save_newsletter(
 
     path = Path(output_path)
 
+    def _write_newsletter():
+        # Ensure parent directories exist
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(output.newsletter_markdown)
+
     # Write file in a thread to avoid blocking
-    await asyncio.to_thread(lambda: path.write_text(output.newsletter_markdown))
+    await asyncio.to_thread(_write_newsletter)
 
     _LOGGER.info(f"Saved newsletter to {path}")
     return path
